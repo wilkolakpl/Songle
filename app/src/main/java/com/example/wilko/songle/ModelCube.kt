@@ -33,28 +33,34 @@ class ModelCube {
             .3F,.2F,.6F,1F,
             1F,1F,1F,1F)
 
-    private var vBuff : ByteBuffer = ByteBuffer.allocateDirect(vertices.size*4)
-    private var v2Buff : FloatBuffer = vBuff.asFloatBuffer()
+    private var vBuff : ByteBuffer
+    private var v2Buff : FloatBuffer
 
-    private var iBuff : ByteBuffer = ByteBuffer.allocateDirect(indexes.size*2)
-    private var i2Buff : ShortBuffer = iBuff.asShortBuffer()
+    private var iBuff : ByteBuffer
+    private var i2Buff : ShortBuffer
 
-    private var cBuff : ByteBuffer = ByteBuffer.allocateDirect(colors.size*4)
-    private var c2Buff : FloatBuffer = cBuff.asFloatBuffer()
+    private var cBuff : ByteBuffer
+    private var c2Buff : FloatBuffer
 
     init {
+        vBuff = ByteBuffer.allocateDirect(vertices.size*4)
         vBuff.order(ByteOrder.nativeOrder())
 
+        v2Buff = vBuff.asFloatBuffer()
         v2Buff.put(vertices)
         v2Buff.position(0)
 
+        iBuff = ByteBuffer.allocateDirect(indexes.size*2)
         iBuff.order(ByteOrder.nativeOrder())
 
+        i2Buff = iBuff.asShortBuffer()
         i2Buff.put(indexes)
         i2Buff.position(0)
 
+        cBuff = ByteBuffer.allocateDirect(colors.size*4)
         cBuff.order(ByteOrder.nativeOrder())
 
+        c2Buff = cBuff.asFloatBuffer()
         c2Buff.put(colors)
         c2Buff.position(0)
     }

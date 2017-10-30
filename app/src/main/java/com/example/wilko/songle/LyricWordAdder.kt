@@ -21,20 +21,20 @@ class LyricWordAdder(val row: Int, val column: Int, val wContext : WeakReference
             val lines = getLyric(context).split("\n")
             val origLines = originalLyrics.split("\n")
             for (lineNo in (0..lines.size-1)){
-                val words = lines[lineNo].split("\t")
+                val words = lines[lineNo].split("\u2003")
                 val origWords = origLines[lineNo].split(" ")
                 for (wordNo in (0..words.size-1)){
                     if ((lineNo + 1 == row) && (wordNo + 1 == column)){
                         if (wordNo == words.size -1){
                             newString.append(origWords[wordNo])
                         } else {
-                            newString.append(origWords[wordNo]+"\t")
+                            newString.append(origWords[wordNo]+"\u2003")
                         }
                     } else {
                         if (wordNo == words.size -1){
                             newString.append(words[wordNo])
                         } else {
-                            newString.append(words[wordNo]+"\t")
+                            newString.append(words[wordNo]+"\u2003")
                         }
                     }
                 }

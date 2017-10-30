@@ -1,17 +1,23 @@
 package com.example.wilko.songle
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.*
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.ConnectivityManager
 import android.os.Bundle
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.ImageButton
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
+import kotlinx.android.synthetic.main.difficulity.*
 import java.io.File
 import java.io.FileInputStream
 import java.lang.Math.pow
@@ -24,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private val dbSongHandler = MySongDBHandler(this)
     private val dbPlacemarkHandler = MyPlacemarkDBHandler(this)
     private var state = 0
+    private var mapNo = -1
     private lateinit var myRenderer : MyRenderer
     private lateinit var titleStr : String
 
@@ -53,16 +60,6 @@ class MainActivity : AppCompatActivity() {
             if (getIntInfo("cached") == 1){
                 val intent = Intent(this, CheckProgressActivity::class.java)
                 startActivityForResult(intent, 1)
-            } else {
-                textSongTitle.text = getString(R.string.downloading_interrupted)
-            }
-        }
-
-        changeStateButton.setOnClickListener {
-            if (getIntInfo("cached") == 1){
-                DownloadXmlTaskSong(NetworkReceiver(), WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
-                textSongTitle.text = getString(R.string.downloading_xml)
-                saveIntInfo("cached", 0)
             } else {
                 textSongTitle.text = getString(R.string.downloading_interrupted)
             }
@@ -150,14 +147,18 @@ class MainActivity : AppCompatActivity() {
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
         return when(item.itemId) {
-            R.id.action_settings -> true
-            R.id.action_favourite -> {
-                changeStateFlag()
-                val mySnackbar = Snackbar.make(myCoordinatorLayout, "testing", Snackbar.LENGTH_SHORT)
-                mySnackbar.setAction("DARE ME!", MyUndoListener())
-                mySnackbar.show()
-                return true
+            R.id.action_settings -> {
+                val intent = Intent(this, SettingsActivity::class.java)
+                startActivity(intent)
+                true
             }
+//            R.id.action_favourite -> {
+//                changeStateFlag()
+//                val mySnackbar = Snackbar.make(myCoordinatorLayout, "testing", Snackbar.LENGTH_SHORT)
+//                mySnackbar.setAction("DARE ME!", MyUndoListener())
+//                mySnackbar.show()
+//                return true
+//            }
 
             else -> super.onOptionsItemSelected(item)
         }
@@ -222,10 +223,10 @@ class MainActivity : AppCompatActivity() {
                     DownloadPinPngs(this, WeakReference<Context>(applicationContext)).execute("http://maps.google.com/mapfiles/kml/paddle/")
                     textSongTitle.text = getString(R.string.downloading_pngs)
                 } else if (result.first == DownloadType.NO_NEW_SONGS) {
-                    saveIntInfo("cached", 1)
                     textSongTitle.text = getString(R.string.downloading_unnecessary)
                     chooseSong()
                     textSongTitle.text = getIntInfo("currentSong").toString()
+                    showDiffDialog()
                 } else if (result.first == DownloadType.IMG) {
                     DownloadKmlTaskLayers(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
                     textSongTitle.text = getString(R.string.downloading_kmls)
@@ -233,10 +234,10 @@ class MainActivity : AppCompatActivity() {
                     DownloadLyrics(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
                     textSongTitle.text = getString(R.string.downloading_lyrics)
                 } else if (result.first == DownloadType.LYRIC) {
-                    saveIntInfo("cached", 1)
                     textSongTitle.text = getString(R.string.downloading_complete)
                     chooseSong()
                     textSongTitle.text = getIntInfo("currentSong").toString()
+                    showDiffDialog()
                 }
             }
         }
@@ -251,15 +252,63 @@ class MainActivity : AppCompatActivity() {
         saveIntInfo("currentSong", (1..(num+1)).random())
 
         var lyric = dbSongHandler.getProp(getIntInfo("currentSong"), "lyric")
-        lyric = lyric.replace(" ","\t")
-        lyric = lyric.replace(Regex("[^\t\n]"), " ")
+        lyric = lyric.replace(" ","\u2003")
+        lyric = lyric.replace(Regex("[^\u2003\n]"), " ")
         saveStrInfo("lyric", lyric)
 
-        dbPlacemarkHandler.deleteAll()
-        val kmlFile = FileInputStream(filesDir.toString() + "/map" + "5" + "song" + getIntInfo("currentSong") + "cacheKml.kml")
-        val kmlParser = KmlParser()
-        val placemarks = kmlParser.parse(kmlFile)
-        dbPlacemarkHandler.addAll(placemarks)
+    }
+
+    fun showDiffDialog(){
+        val mBuilder = AlertDialog.Builder(this@MainActivity)
+        val mView = layoutInflater.inflate(R.layout.difficulity, null)
+        val diff5 = mView.findViewById<ImageButton>(R.id.diff5Button)
+        val diff4 = mView.findViewById<ImageButton>(R.id.diff4Button)
+        val diff3 = mView.findViewById<ImageButton>(R.id.diff3Button)
+        val diff2 = mView.findViewById<ImageButton>(R.id.diff2Button)
+        val diff1 = mView.findViewById<ImageButton>(R.id.diff1Button)
+        mBuilder.setView(mView)
+        val alert = mBuilder.create()
+        alert.setCancelable(false)
+        alert.setCanceledOnTouchOutside(false)
+        alert.window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        diff5.setOnClickListener {
+            mapNo = 5
+            alert.dismiss()
+            loadKlm()
+        }
+        diff4.setOnClickListener {
+            mapNo = 4
+            alert.dismiss()
+            loadKlm()
+        }
+        diff3.setOnClickListener {
+            mapNo = 3
+            alert.dismiss()
+            loadKlm()
+        }
+        diff2.setOnClickListener {
+            mapNo = 2
+            alert.dismiss()
+            loadKlm()
+        }
+        diff1.setOnClickListener {
+            mapNo = 1
+            alert.dismiss()
+            loadKlm()
+        }
+        alert.show()
+    }
+
+
+    fun loadKlm(){
+        if (mapNo != -1){
+            dbPlacemarkHandler.deleteAll()
+            val kmlFile = FileInputStream(filesDir.toString() + "/map" + mapNo + "song" + getIntInfo("currentSong") + "cacheKml.kml")
+            val kmlParser = KmlParser() //@todo kick to asynch
+            val placemarks = kmlParser.parse(kmlFile)
+            dbPlacemarkHandler.addAll(placemarks)
+            saveIntInfo("cached", 1)
+        }
     }
 
     fun ClosedRange<Int>.random() = Random().nextInt(endInclusive - start) +  start

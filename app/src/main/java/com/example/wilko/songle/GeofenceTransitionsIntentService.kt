@@ -10,7 +10,7 @@ import com.google.android.gms.maps.GoogleMap
 /**
  * Created by wilko on 10/25/2017.
  */
-class GeofenceTransitionsIntentService(): IntentService("GeofenceTransitionsIntentService") {
+class GeofenceTransitionsIntentService: IntentService("GeofenceTransitionsIntentService") {
     var ACTION_RESP = "com.example.wilko.songle.GEOFENCE_PROCESSED"
     private val TAG = "GeofTranIntentService"
     override fun onHandleIntent(intent: Intent) {

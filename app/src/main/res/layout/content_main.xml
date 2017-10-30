@@ -39,64 +39,64 @@
         app:layout_constraintTop_toTopOf="@+id/surfaceView"
         app:layout_constraintVertical_bias="0.016" />
 
-    <android.support.design.widget.FloatingActionButton
+    <ImageButton
+        android:background="?android:selectableItemBackground"
         android:id="@+id/mapButton"
-        android:layout_width="130dp"
-        android:layout_height="130dp"
-        android:layout_marginBottom="16dp"
-        android:layout_marginStart="16dp"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_marginBottom="5dp"
+        android:layout_marginStart="5dp"
         android:clickable="true"
         android:focusable="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/ic_maptest" />
+        app:srcCompat="@drawable/ic_maptest"
+        android:scaleType="fitXY"/>
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/changeStateButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
+    <ImageButton
+        android:background="?android:selectableItemBackground"
+        android:id="@+id/checkProgressButton"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_marginBottom="5dp"
+        android:layout_marginEnd="5dp"
         android:clickable="true"
         android:focusable="true"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@android:drawable/ic_menu_revert" />
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/changeSongButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="16dp"
-        android:clickable="true"
-        android:focusable="true"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@android:drawable/ic_menu_edit" />
+        app:srcCompat="@drawable/ic_progressicon"
+        android:scaleType="fitXY"/>
 
-    <ImageView
-        android:id="@+id/imageView2"
-        android:layout_width="216dp"
-        android:layout_height="85dp"
-        android:layout_marginBottom="232dp"
+    <TextView
+        android:id="@+id/score"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
         android:layout_marginEnd="8dp"
         android:layout_marginStart="8dp"
-        app:layout_constraintBottom_toBottomOf="@+id/surfaceView"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/ic_songletitle" />
-
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/checkProgressButton"
-        android:layout_width="130dp"
-        android:layout_height="130dp"
-        android:layout_marginBottom="16dp"
-        android:layout_marginEnd="16dp"
-        android:clickable="true"
-        android:focusable="true"
+        android:layout_marginTop="8dp"
+        android:text="57"
+        android:textColor="@color/colorPrimaryDark"
+        android:textSize="30sp"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/surfaceView"
+        app:layout_constraintHorizontal_bias="0.501"
+        app:layout_constraintStart_toStartOf="@+id/surfaceView"
+        app:layout_constraintTop_toTopOf="@+id/surfaceView"
+        app:layout_constraintVertical_bias="0.528" />
+
+    <TextView
+        android:id="@+id/scoreDescr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:text="@string/score_descr"
+        android:textColor="@color/colorPrimaryDark"
+        android:textSize="18sp"
+        app:layout_constraintBottom_toTopOf="@+id/score"
         app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@drawable/ic_songlegamestatusicon" />
+        app:layout_constraintHorizontal_bias="0.501"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </android.support.constraint.ConstraintLayout>

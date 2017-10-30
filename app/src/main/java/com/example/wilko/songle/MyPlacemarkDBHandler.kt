@@ -62,6 +62,12 @@ class MyPlacemarkDBHandler(context: Context) : SQLiteOpenHelper(context, "placem
         db.close()
     }
 
+    fun delete(name : String){
+        val db = writableDatabase
+        db.delete(TABLE_PLACEMARKS, COLUMN_NAME + " = '" + name + "'", null)
+        db.close()
+    }
+
     fun populateList(map : HashMap<String, MarkerOptions>){
         val db = writableDatabase
         val query = "SELECT * FROM " + TABLE_PLACEMARKS + " WHERE 1"

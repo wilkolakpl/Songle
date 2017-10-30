@@ -16,6 +16,10 @@ import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import android.view.animation.AccelerateInterpolator
+import android.view.animation.AlphaAnimation
+import android.view.animation.AnimationSet
+import android.view.animation.DecelerateInterpolator
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.*
@@ -26,10 +30,12 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.File
 import java.io.FileInputStream
 import java.lang.ref.WeakReference
 import java.net.MalformedURLException
+import java.util.*
 
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks,
@@ -49,6 +55,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_maps)
+        point.imageAlpha = 0
 
         val filter = IntentFilter(GeofencingReceiver().ACTION_RESP)
         filter.addCategory(Intent.CATEGORY_DEFAULT)
@@ -86,16 +93,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         super.onStop()
         if (mGoogleApiClient.isConnected){
             mGoogleApiClient.disconnect()
-        }
-        if (!mapMarkersWithGeofences.isEmpty()){
-            dbPlacemarkHandler.deleteAll()
-            val list = mutableListOf<Placemark>()
-            for (marker in mapMarkersWithGeofences.values){
-                val placemark = Placemark(marker.first.title, marker.first.snippet, "#" + marker.first.snippet, marker.first.position.latitude, marker.first.position.longitude)
-                list.add(placemark)
-            }
-            dbPlacemarkHandler.addAll(list)
-            //SaveRemainingPlacemarks(mapMarkersWithGeofences, WeakReference<Context>(applicationContext)).execute() @todo I must async this
         }
     }
 
@@ -143,7 +140,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION)
         }
     }
-
+    val geofenceRecalculationDilution = 5
+    var currentGeofencePoll = 0
     override fun onLocationChanged(current : Location?) {
         if (current == null){
             Log.i(TAG, "[onLocationChanged] Location unknown")
@@ -152,9 +150,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
             (${current.getLatitude()},
             ${current.getLongitude()})""")
             /////////////////////////////////////////////////////
-
-            updateGeofenceMonitoring(current.getLatitude(), current.getLongitude())
-
+            if (currentGeofencePoll % geofenceRecalculationDilution == 0){
+                updateGeofenceMonitoring(current.getLatitude(), current.getLongitude())
+            }
+            currentGeofencePoll = (currentGeofencePoll + 1) % geofenceRecalculationDilution
             ////////////////////////////////////////////////////
         }
     }
@@ -194,7 +193,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         mMap = googleMap
         // Add a marker and move the camera
         val edin = LatLng(55.9445390, -3.1885250)
-        mMap.moveCamera(CameraUpdateFactory.zoomTo(15f))
+        mMap.moveCamera(CameraUpdateFactory.zoomTo(17f))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(edin))
 
         try {
@@ -217,7 +216,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                                 .setCircularRegion(
                                         marker.position.latitude,
                                         marker.position.longitude,
-                                        60f
+                                        40f
                                 )
                                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
                                 .setNotificationResponsiveness(1000)
@@ -245,17 +244,25 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         return sharedPref.getInt(key, 0)
     }
 
+//    private val geofenceIds = mutableListOf<String>()
     fun updateGeofenceMonitoring(lat: Double, long: Double){
         try{
+//            if (!mGoogleApiClient.isConnected)  {
+//                Log.e(TAG, "api client not connected")
+//            } else if (!geofenceIds.isEmpty()) {
+//                LocationServices.GeofencingApi.removeGeofences(mGoogleApiClient, geofenceIds)
+//            }
+//            geofenceIds.clear()
             val geofences = mutableListOf<Geofence>()
             val mrkrsAndGeofences = mutableListOf<Pair<Marker, Geofence>>()
+
             for (key in mapMarkersWithGeofences.keys){
                 mrkrsAndGeofences.add(mapMarkersWithGeofences[key]!!)
             }
             mrkrsAndGeofences.sortBy { haversine(lat, long, it.first.position.latitude, it.first.position.longitude) }
-
             for (x in (0..50)){
                 geofences.add(mrkrsAndGeofences[x].second)
+//                geofenceIds.add(mrkrsAndGeofences[x].second.requestId)
             }
 
             val geofenceRequest = GeofencingRequest.Builder()
@@ -299,6 +306,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         return (R * c) * 1000
     }
 
+    fun collectedWord(){
+        point.imageAlpha = 255
+        val task = Alpha0()
+        val timer = Timer()
+        timer.schedule(task, 500.toLong())
+    }
+
+    private inner class Alpha0: TimerTask(){
+        override fun run(){
+            runOnUiThread{
+                point.imageAlpha = 0
+            }
+        }
+    }
+
     inner class GeofencingReceiver : BroadcastReceiver() {
         val ACTION_RESP = "com.example.wilko.songle.GEOFENCE_PROCESSED"
         override fun onReceive(context: Context, intent: Intent) {
@@ -312,6 +334,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
             if (mapMarkersWithGeofences[nameOfPlacemark] != null){
                 mapMarkersWithGeofences[nameOfPlacemark]!!.first.remove()
                 mapMarkersWithGeofences.remove(nameOfPlacemark)
+                dbPlacemarkHandler.delete(nameOfPlacemark)
+                collectedWord()
             }
         }
 

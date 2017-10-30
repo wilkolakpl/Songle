@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/transparent">
+
+    <ImageView
+        android:background="?android:selectableItemBackground"
+        android:id="@+id/diff"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/ic_diff" />
+    <ImageButton
+        android:background="?android:selectableItemBackground"
+        android:id="@+id/diff1Button"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/ic_diff1" />
+    <ImageButton
+        android:background="?android:selectableItemBackground"
+        android:id="@+id/diff2Button"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/ic_diff2" />
+    <ImageButton
+        android:background="?android:selectableItemBackground"
+        android:id="@+id/diff3Button"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/ic_diff3" />
+    <ImageButton
+        android:background="?android:selectableItemBackground"
+        android:id="@+id/diff4Button"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/ic_diff4" />
+    <ImageButton
+        android:background="?android:selectableItemBackground"
+        android:id="@+id/diff5Button"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:scaleType="fitXY"
+        app:srcCompat="@drawable/ic_diff5" />
+
+</LinearLayout>

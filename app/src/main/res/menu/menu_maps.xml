@@ -4,7 +4,7 @@
     tools:context="com.example.wilko.songle.MapsActivity">
 
     <item android:id="@+id/action_check_progress"
-        android:icon="@drawable/ic_songlegamestatusicon"
+        android:icon="@drawable/ic_guessiconmini"
         android:title="@string/title_activity_check_progress"
         app:showAsAction="always"/>
 </menu>

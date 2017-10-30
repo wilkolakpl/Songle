@@ -44,15 +44,20 @@
         android:layout_margin="@dimen/fab_margin"
         app:layout_anchor="@+id/app_bar"
         app:layout_anchorGravity="right|center"
-        app:srcCompat="@android:drawable/ic_media_rew" />
+        app:srcCompat="@android:drawable/ic_media_rew"
+        android:scaleType="center"/>
 
-    <android.support.design.widget.FloatingActionButton
+    <ImageButton
+        android:background="?android:selectableItemBackground"
         android:id="@+id/guessButton"
-        android:layout_width="80dp"
-        android:layout_height="80dp"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
         android:layout_margin="@dimen/fab_margin"
+        android:clickable="true"
+        android:focusable="true"
         app:layout_anchor="@id/app_bar"
         app:layout_anchorGravity="bottom|end"
-        app:srcCompat="@drawable/ic_songleguesssongicon" />
+        app:srcCompat="@drawable/ic_guessicon"
+        android:scaleType="fitXY"/>
 
 </android.support.design.widget.CoordinatorLayout>
