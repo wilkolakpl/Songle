@@ -115,4 +115,15 @@ class MySongDBHandler(context: Context) : SQLiteOpenHelper(context, "songs.db", 
         db.close()
         return
     }
+
+    fun getProp(songNo: Int, prop : String): String{
+        val db = writableDatabase
+        val query = "SELECT * FROM " + TABLE_SONGS + " WHERE " + COLUMN_NUMBER + " = " + songNo
+        val c = db.rawQuery(query, null)
+        c.moveToFirst()
+        val result = c.getString(c.getColumnIndex(prop))
+        c.close()
+        db.close()
+        return result
+    }
 }

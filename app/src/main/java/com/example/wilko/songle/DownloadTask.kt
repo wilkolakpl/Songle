@@ -2,6 +2,8 @@ package com.example.wilko.songle
 
 import android.content.Context
 import android.os.AsyncTask
+import android.util.Log
+import org.apache.commons.io.FileUtils
 import org.xmlpull.v1.XmlPullParserException
 import java.io.*
 import java.net.HttpURLConnection
@@ -14,14 +16,16 @@ import java.net.URL
 abstract class DownloadTask<E>(private val caller : DownloadCompleteListener<E>) :
         AsyncTask<String, Void, E?>() {
 
+    val TAG = "DownloadTask"
     override fun doInBackground(vararg urls: String): E? {
         return try {
             loadFromNetwork(urls[0])
         } catch (e: IOException) {
-            //"Unable to load content. Check your network connection"//@todo
+            Log.e(TAG, "IOException")
             null
         } catch (e: XmlPullParserException) {
             //"Error parsing XML"//@todo
+            Log.e(TAG, "Error Parsing")
             null
         }
     }
@@ -48,43 +52,8 @@ abstract class DownloadTask<E>(private val caller : DownloadCompleteListener<E>)
     }
 
     @Throws(IOException::class)
-    fun fromStreamtoFile(context: Context, cacheFileName: String, inputStream: InputStream){
-        try {
-            val file = File(context.cacheDir, cacheFileName)
-            val output = FileOutputStream(file)
-            try {
-                val buffer = ByteArray(4 * 1024)
-                var read = inputStream.read(buffer)
-                while (read != -1) {
-                    output.write(buffer, 0, read)
-                    read = inputStream.read(buffer)
-                }
-                output.flush()
-            } finally {
-                output.close()
-            }
-        } finally {
-            inputStream.close()
-        }
-    }
-
-    @Throws(IOException::class)
-    fun fromStreamtoString(inputStream: InputStream): String{
-        try {
-            val bufferSize = 1024
-            val buffer = CharArray(bufferSize)
-            val out = StringBuilder()
-            val reader = InputStreamReader(inputStream, "UTF-8")
-            while (true) {
-                val int = reader.read(buffer, 0, bufferSize)
-                if (int < 0){
-                    break
-                }
-                out.append(buffer, 0, int)
-            }
-            return out.toString()
-        } finally {
-            inputStream.close()
-        }
+    fun fromStreamtoCacheFile(context: Context, cacheFileName: String, inputStream: InputStream) {
+        val file = File(context.filesDir, cacheFileName)
+        FileUtils.copyInputStreamToFile(inputStream, file)
     }
 }

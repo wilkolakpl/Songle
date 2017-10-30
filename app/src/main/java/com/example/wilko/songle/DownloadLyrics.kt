@@ -2,12 +2,13 @@ package com.example.wilko.songle
 
 import android.content.ContentValues
 import android.content.Context
+import org.apache.commons.io.IOUtils
 import java.lang.ref.WeakReference
 
 /**
  * Created by wilko on 10/25/2017.
  */
-class DownloadLyrics(caller : DownloadCompleteListener<Pair<DownloadType, List<Song>>>, var wContext : WeakReference<Context>) : DownloadTask<Pair<DownloadType, List<Song>>>(caller){
+class DownloadLyrics(caller : DownloadCompleteListener<Pair<DownloadType, List<Song>>>, val wContext : WeakReference<Context>) : DownloadTask<Pair<DownloadType, List<Song>>>(caller){
     override fun loadFromNetwork(urlString: String) : Pair<DownloadType, List<Song>> {
 
         val context = wContext.get()
@@ -19,7 +20,7 @@ class DownloadLyrics(caller : DownloadCompleteListener<Pair<DownloadType, List<S
             val db = dbHandler.writableDatabase
             for (song in songs) {
                 val stream = downloadUrl(urlString + String.format("%02d",song.number) + "/lyrics.txt")
-                val lyricString = fromStreamtoString(stream)
+                val lyricString = IOUtils.toString(stream, "UTF-8")
                 val ctn = ContentValues()
                 ctn.put("lyric", lyricString)
                 db.update("songs", ctn, "number=" + song.number, null)

@@ -1,5 +1,6 @@
 package com.example.wilko.songle
 
+import android.content.Context
 import android.util.Xml
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
@@ -10,25 +11,32 @@ import java.io.InputStream
  * Created by wilko on 10/13/2017.
  */
 
-
-class XmlSongParser {
+class XmlSongParser : XmlParser() {
     private val ns: String? = null
 
     @Throws(XmlPullParserException::class, IOException::class)
-    fun parse(input : InputStream): List<Song> {
+    fun parse(input : InputStream, context: Context): List<Song> {
         input.use {
             val parser = Xml.newPullParser()
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
             parser.setInput(input, null)
             parser.nextTag()
-            return readFeed(parser)
+            return readFeed(parser, context)
         }
     }
 
     @Throws(XmlPullParserException::class, IOException::class)
-    private fun readFeed(parser: XmlPullParser): List<Song> {
+    fun readFeed(parser: XmlPullParser, context: Context): List<Song> {
         val entries = ArrayList<Song>()
         parser.require(XmlPullParser.START_TAG, ns, "Songs")
+
+        val prevTimestamp = getInfo("timestamp", context)
+        val currTimestamp = parser.getAttributeValue(null, "timestamp")
+        if (prevTimestamp == currTimestamp) {
+            return entries
+        }
+        saveInfo("timestamp", currTimestamp, context)
+
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
@@ -41,6 +49,18 @@ class XmlSongParser {
             }
         }
         return entries
+    }
+
+    private fun getInfo(key: String, context: Context): String{
+        val sharedPref = context.getSharedPreferences("permStrs", Context.MODE_PRIVATE)
+        return sharedPref.getString(key, "")
+    }
+
+    private fun saveInfo(key: String, value: String, context: Context){
+        val sharedPref = context.getSharedPreferences("permStrs", Context.MODE_PRIVATE)
+        val editor = sharedPref.edit()
+        editor.putString(key, value)
+        editor.apply()
     }
 
     @Throws(XmlPullParserException::class, IOException::class)
@@ -62,37 +82,5 @@ class XmlSongParser {
             }
         }
         return Song(number.toInt(), artist, title, link, "", "", "", "", "", "")
-    }
-
-    @Throws(XmlPullParserException::class, IOException::class)
-    private fun readProp(parser: XmlPullParser, name: String): String {
-        parser.require(XmlPullParser.START_TAG, ns, name)
-        val title = readText(parser)
-        parser.require(XmlPullParser.END_TAG, ns, name)
-        return title
-    }
-
-    @Throws(XmlPullParserException::class, IOException::class)
-    private fun readText(parser: XmlPullParser): String {
-        var result = ""
-        if (parser.next() == XmlPullParser.TEXT) {
-            result = parser.text
-            parser.nextTag()
-        }
-        return result
-    }
-
-    @Throws(XmlPullParserException::class, IOException::class)
-    private fun skip(parser: XmlPullParser) {
-        if (parser.eventType != XmlPullParser.START_TAG) {
-            throw IllegalStateException()
-        }
-        var depth = 1
-        while (depth != 0) {
-            when (parser.next()) {
-                XmlPullParser.END_TAG -> depth--
-                XmlPullParser.START_TAG -> depth++
-            }
-        }
     }
 }

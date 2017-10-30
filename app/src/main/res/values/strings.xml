@@ -1,7 +1,10 @@
 <resources>
     <string name="app_name">Songle</string>
-
-    <string name="select_song">Please select a song</string>
+    <!--<![CDATA[<]]>==-->
+    <string name="ready_to_guess_song">Ready to guess?</string>
+    <string name="how_did_you_do">the suspense…</string>
+    <string name="correct_guess">CORRECT!</string>
+    <string name="incorrect_guess">INCORRECT!</string>
 
     <string name="no_internet">Unable to connect to the internet</string>
     <string name="error_downloading">Unable download songs</string>
@@ -14,8 +17,9 @@
     <string name="downloading_interrupted">WAIT TILL IT DOWNLOADS</string>
     <string name="downloading_unnecessary">Already downloaded</string>
 
-
     <string name="action_settings">Settings</string>
     <string name="action_favourite">Favourite</string>
     <string name="title_activity_maps">Map</string>
+    <string name="title_activity_check_progress">Progress</string>
+
 </resources>

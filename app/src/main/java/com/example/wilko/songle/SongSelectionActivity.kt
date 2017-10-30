@@ -34,7 +34,7 @@ class SongSelectionActivity : AppCompatActivity() {
         songList.setOnItemClickListener { parent, view, position, id ->
             Toast.makeText(this, "Song Selected:"+" "+songs[position].title,Toast.LENGTH_SHORT).show()
             val returnIntent = Intent()
-            returnIntent.putExtra("songTitle", songs[position].title)
+            returnIntent.putExtra("songNo", songs[position].number)
             setResult(Activity.RESULT_OK, returnIntent)
             finish()
         }

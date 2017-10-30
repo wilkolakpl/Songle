@@ -12,6 +12,8 @@ import android.view.View
 import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
+import java.io.File
+import java.io.FileInputStream
 import java.lang.Math.pow
 import java.lang.ref.WeakReference
 import java.util.*
@@ -19,7 +21,8 @@ import java.util.*
 class MainActivity : AppCompatActivity() {
 
     private val receiver = NetworkReceiver()
-    private val dbHandler = MySongDBHandler(this)
+    private val dbSongHandler = MySongDBHandler(this)
+    private val dbPlacemarkHandler = MyPlacemarkDBHandler(this)
     private var state = 0
     private lateinit var myRenderer : MyRenderer
     private lateinit var titleStr : String
@@ -36,9 +39,9 @@ class MainActivity : AppCompatActivity() {
         this.registerReceiver(receiver, filter)
 
         mapButton.setOnClickListener {
-            if (getInfo("cached") == 1){
+            if (getIntInfo("cached") == 1){
                 val intent = Intent(this, MapsActivity::class.java)
-                startActivity(intent)
+                startActivityForResult(intent, 1)
             } else {
                 textSongTitle.text = getString(R.string.downloading_interrupted)
             }
@@ -46,9 +49,9 @@ class MainActivity : AppCompatActivity() {
                     .setAction("Action", null).show()*/
         }
 
-        changeSongButton.setOnClickListener{
-            if (getInfo("cached") == 1){
-                val intent = Intent(this, SongSelectionActivity::class.java)
+        checkProgressButton.setOnClickListener{
+            if (getIntInfo("cached") == 1){
+                val intent = Intent(this, CheckProgressActivity::class.java)
                 startActivityForResult(intent, 1)
             } else {
                 textSongTitle.text = getString(R.string.downloading_interrupted)
@@ -56,10 +59,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         changeStateButton.setOnClickListener {
-            if (getInfo("cached") == 1){
-                DownloadXmlTaskSong(NetworkReceiver()).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
+            if (getIntInfo("cached") == 1){
+                DownloadXmlTaskSong(NetworkReceiver(), WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
                 textSongTitle.text = getString(R.string.downloading_xml)
-                saveInfo("cached", 0)
+                saveIntInfo("cached", 0)
             } else {
                 textSongTitle.text = getString(R.string.downloading_interrupted)
             }
@@ -76,14 +79,21 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-    fun saveInfo(key: String, int: Int){
+    fun saveIntInfo(key: String, int: Int){
         val sharedPref = getSharedPreferences("permInts", Context.MODE_PRIVATE)
         val editor = sharedPref.edit()
         editor.putInt(key, int)
         editor.apply()
     }
 
-    fun getInfo(key: String): Int{
+    fun saveStrInfo(key: String, string: String){
+        val sharedPref = getSharedPreferences("permStrs", Context.MODE_PRIVATE)
+        val editor = sharedPref.edit()
+        editor.putString(key, string)
+        editor.apply()
+    }
+
+    fun getIntInfo(key: String): Int{
         val sharedPref = getSharedPreferences("permInts", Context.MODE_PRIVATE)
         return sharedPref.getInt(key, 0)
     }
@@ -164,11 +174,25 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1){
             if(resultCode == Activity.RESULT_OK && data != null){
-                titleStr = data.getStringExtra("songTitle")
-                handRoll(1)
+                val songNo = data.getIntExtra("songNo", -1)
+                val didReset = data.getBooleanExtra("reset", false)
+                if (songNo != -1) {
+                    textSongTitle.text = getString(R.string.how_did_you_do)
+                    if (songNo == getIntInfo("currentSong")){
+                        titleStr = getString(R.string.correct_guess)
+                        handRoll(2)
+                    } else {
+                        titleStr = getString(R.string.incorrect_guess)
+                        handRoll(1)
+                    }
+                } else if(didReset) {
+                    DownloadXmlTaskSong(NetworkReceiver(), WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
+                    textSongTitle.text = getString(R.string.downloading_xml)
+                    saveIntInfo("cached", 0)
+                }
             }
             else{
-                textSongTitle.text = getString(R.string.select_song)
+                textSongTitle.text = getString(R.string.ready_to_guess_song)
             }
         }
     }
@@ -179,10 +203,10 @@ class MainActivity : AppCompatActivity() {
             val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val networkInfo = connMgr.activeNetworkInfo
             if (networkInfo != null) {
-                if (getInfo("cached") == 1){
+                if (getIntInfo("cached") == 1){
                     textSongTitle.text = getString(R.string.downloading_unnecessary)
                 } else {
-                    DownloadXmlTaskSong(this).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
+                    DownloadXmlTaskSong(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
                     textSongTitle.text = getString(R.string.downloading_xml)
                 }
             } else {
@@ -193,10 +217,15 @@ class MainActivity : AppCompatActivity() {
         override fun downloadComplete(result: Pair<DownloadType, List<Song>>?){
             if (result != null){
                 if (result.first == DownloadType.SONGS) {
-                    dbHandler.deleteAll()
-                    dbHandler.addAll(result.second)
+                    dbSongHandler.deleteAll()
+                    dbSongHandler.addAll(result.second)
                     DownloadPinPngs(this, WeakReference<Context>(applicationContext)).execute("http://maps.google.com/mapfiles/kml/paddle/")
                     textSongTitle.text = getString(R.string.downloading_pngs)
+                } else if (result.first == DownloadType.NO_NEW_SONGS) {
+                    saveIntInfo("cached", 1)
+                    textSongTitle.text = getString(R.string.downloading_unnecessary)
+                    chooseSong()
+                    textSongTitle.text = getIntInfo("currentSong").toString()
                 } else if (result.first == DownloadType.IMG) {
                     DownloadKmlTaskLayers(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
                     textSongTitle.text = getString(R.string.downloading_kmls)
@@ -204,10 +233,34 @@ class MainActivity : AppCompatActivity() {
                     DownloadLyrics(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
                     textSongTitle.text = getString(R.string.downloading_lyrics)
                 } else if (result.first == DownloadType.LYRIC) {
-                    saveInfo("cached", 1)
+                    saveIntInfo("cached", 1)
                     textSongTitle.text = getString(R.string.downloading_complete)
+                    chooseSong()
+                    textSongTitle.text = getIntInfo("currentSong").toString()
                 }
             }
         }
     }
+
+    fun chooseSong() {
+        val db = dbSongHandler.writableDatabase
+        val num = db.compileStatement("SELECT Count(*) FROM songs")
+                .simpleQueryForLong()
+                .toInt()
+        db.close()
+        saveIntInfo("currentSong", (1..(num+1)).random())
+
+        var lyric = dbSongHandler.getProp(getIntInfo("currentSong"), "lyric")
+        lyric = lyric.replace(" ","\t")
+        lyric = lyric.replace(Regex("[^\t\n]"), " ")
+        saveStrInfo("lyric", lyric)
+
+        dbPlacemarkHandler.deleteAll()
+        val kmlFile = FileInputStream(filesDir.toString() + "/map" + "5" + "song" + getIntInfo("currentSong") + "cacheKml.kml")
+        val kmlParser = KmlParser()
+        val placemarks = kmlParser.parse(kmlFile)
+        dbPlacemarkHandler.addAll(placemarks)
+    }
+
+    fun ClosedRange<Int>.random() = Random().nextInt(endInclusive - start) +  start
 }
