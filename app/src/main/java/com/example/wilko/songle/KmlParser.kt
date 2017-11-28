@@ -1,5 +1,6 @@
 package com.example.wilko.songle
 
+import android.content.Context
 import android.util.Xml
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
@@ -13,10 +14,14 @@ import java.io.InputStream
 
 class KmlParser : XmlParser() {
     private val ns: String? = null
+    private val collectedWords = HashMap<String, Boolean>()
 
     @Throws(XmlPullParserException::class, IOException::class)
-    fun parse(input : InputStream): List<Placemark> {
+    fun parse(input : InputStream, context: Context): List<Placemark> {
         input.use {
+            val dbCollectedWordsHandler = MyCollectedWordsDBHandler(context)
+            dbCollectedWordsHandler.populateHashMap(collectedWords)
+
             val parser = Xml.newPullParser()
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
             parser.setInput(input, null)
@@ -50,9 +55,13 @@ class KmlParser : XmlParser() {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            // Starts by looking for the song tag
+            // Starts by looking for the placemark tag
             if (parser.name == "Placemark") {
-                entries.add(readPlacemark(parser))
+                val placemark = readPlacemark(parser)
+                // add placemark only if not collected yet (prior to changing difficulty)
+                if (placemark.name !in collectedWords.keys){
+                    entries.add(placemark)
+                }
             } else {
                 skip(parser)
             }

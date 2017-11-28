@@ -17,6 +17,7 @@ class MySongDBHandler(context: Context) : SQLiteOpenHelper(context, "songs.db", 
     private val COLUMN_TITLE ="tile"
     private val COLUMN_LINK ="link"
     private val COLUMN_LYRIC = "lyric"
+    private val COLUMN_NOOFWORDS = "noOfWords"
     private val COLUMN_KMLLOCATION1 = "kmlLocation1"
     private val COLUMN_KMLLOCATION2 = "kmlLocation2"
     private val COLUMN_KMLLOCATION3 = "kmlLocation3"
@@ -30,6 +31,7 @@ class MySongDBHandler(context: Context) : SQLiteOpenHelper(context, "songs.db", 
                 COLUMN_TITLE + " TEXT, " +
                 COLUMN_LINK + " TEXT, " +
                 COLUMN_LYRIC + " TEXT, " +
+                COLUMN_NOOFWORDS + " TEXT, " +
                 COLUMN_KMLLOCATION1 + " TEXT, " +
                 COLUMN_KMLLOCATION2 + " TEXT, " +
                 COLUMN_KMLLOCATION3 + " TEXT, " +
@@ -55,6 +57,7 @@ class MySongDBHandler(context: Context) : SQLiteOpenHelper(context, "songs.db", 
         values.put(COLUMN_TITLE, song.title)
         values.put(COLUMN_LINK, song.link)
         values.put(COLUMN_LYRIC, song.lyric)
+        values.put(COLUMN_NOOFWORDS, song.noOfWords)
         values.put(COLUMN_KMLLOCATION1, song.kmlLocation1)
         values.put(COLUMN_KMLLOCATION2, song.kmlLocation2)
         values.put(COLUMN_KMLLOCATION3, song.kmlLocation3)
@@ -74,6 +77,7 @@ class MySongDBHandler(context: Context) : SQLiteOpenHelper(context, "songs.db", 
             values.put(COLUMN_TITLE, song.title)
             values.put(COLUMN_LINK, song.link)
             values.put(COLUMN_LYRIC, song.lyric)
+            values.put(COLUMN_NOOFWORDS, song.noOfWords)
             values.put(COLUMN_KMLLOCATION1, song.kmlLocation1)
             values.put(COLUMN_KMLLOCATION2, song.kmlLocation2)
             values.put(COLUMN_KMLLOCATION3, song.kmlLocation3)
@@ -103,6 +107,7 @@ class MySongDBHandler(context: Context) : SQLiteOpenHelper(context, "songs.db", 
                     c.getString(c.getColumnIndex(COLUMN_TITLE)),
                     c.getString(c.getColumnIndex(COLUMN_LINK)),
                     c.getString(c.getColumnIndex(COLUMN_LYRIC)),
+                    c.getInt(c.getColumnIndex(COLUMN_NOOFWORDS)),
                     c.getString(c.getColumnIndex(COLUMN_KMLLOCATION1)),
                     c.getString(c.getColumnIndex(COLUMN_KMLLOCATION2)),
                     c.getString(c.getColumnIndex(COLUMN_KMLLOCATION3)),
@@ -114,6 +119,15 @@ class MySongDBHandler(context: Context) : SQLiteOpenHelper(context, "songs.db", 
         c.close()
         db.close()
         return
+    }
+
+    fun howMany() : Int{
+        val db = writableDatabase
+        val num = db.compileStatement("SELECT Count(*) FROM " + TABLE_SONGS)
+                .simpleQueryForLong()
+                .toInt()
+        db.close()
+        return num
     }
 
     fun getProp(songNo: Int, prop : String): String{

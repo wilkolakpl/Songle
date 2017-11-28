@@ -1,35 +1,68 @@
 package com.example.wilko.songle
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_check_progress.*
 import kotlinx.android.synthetic.main.content_check_progress.*
+import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.experimental.async
+import org.jetbrains.anko.alert
+import org.jetbrains.anko.coroutines.experimental.bg
+import org.jetbrains.anko.noButton
+import org.jetbrains.anko.yesButton
 
 class CheckProgressActivity : AppCompatActivity() {
+
+    lateinit var alert : AlertDialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_check_progress)
         setSupportActionBar(toolbar)
 
-        collectedWords.text = getLyric()
+        async(UI){ // avoiding the first, long access time blocking the UI thread
+            val lyric = bg{getLyric()}
+            collectedWords.text = "\n\n" + lyric.await()
+        }
 
-        guessButton.setOnClickListener { view ->
+        guessButton.setOnClickListener { _ ->
             val intent = Intent(this, SongSelectionActivity::class.java)
             intent.setFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT)
             startActivity(intent)
             finish()
         }
 
-        resetButton.setOnClickListener { view ->
-            val returnIntent = Intent()
-            returnIntent.putExtra("reset", true)
-            setResult(Activity.RESULT_OK, returnIntent)
-            finish()
+        resetButton.setOnClickListener { _ ->
+            alert = alert("You are about to clear your progress, proceed?") {
+                yesButton { val returnIntent = Intent()
+                    returnIntent.putExtra("reset", true)
+                    setResult(Activity.RESULT_OK, returnIntent)
+                    finish() }
+                noButton {}
+            }.show()
+        }
+
+        upgradeButton.setOnClickListener { _ ->
+            alert = alert("You are about to lower the difficulty and the obtainable score, proceed?") {
+                yesButton { val upgradeIntent = Intent()
+                    upgradeIntent.putExtra("upgrade", true)
+                    setResult(Activity.RESULT_OK, upgradeIntent)
+                    finish() }
+                noButton {}
+            }.show()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        try {
+            alert.dismiss()
+        } catch (e: UninitializedPropertyAccessException){
+
         }
     }
 

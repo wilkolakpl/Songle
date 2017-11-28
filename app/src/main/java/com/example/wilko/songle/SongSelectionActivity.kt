@@ -31,17 +31,13 @@ class SongSelectionActivity : AppCompatActivity() {
 
         songList.adapter = adapter
         songList.isClickable = true
-        songList.setOnItemClickListener { parent, view, position, id ->
+        songList.setOnItemClickListener { _, _, position, _ ->
             //Toast.makeText(this, "Song Selected:"+" "+songs[position].title,Toast.LENGTH_SHORT).show()
             val returnIntent = Intent()
             returnIntent.putExtra("songNo", songs[position].number)
             setResult(Activity.RESULT_OK, returnIntent)
             finish()
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
     }
 
     private inner class MyAdapter(context : Context): BaseAdapter() {

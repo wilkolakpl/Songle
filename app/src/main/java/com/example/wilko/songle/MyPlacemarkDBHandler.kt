@@ -68,7 +68,7 @@ class MyPlacemarkDBHandler(context: Context) : SQLiteOpenHelper(context, "placem
         db.close()
     }
 
-    fun populateList(map : HashMap<String, MarkerOptions>){
+    fun populateHashMap(map : HashMap<String, MarkerOptions>){
         val db = writableDatabase
         val query = "SELECT * FROM " + TABLE_PLACEMARKS + " WHERE 1"
         val c = db.rawQuery(query, null)

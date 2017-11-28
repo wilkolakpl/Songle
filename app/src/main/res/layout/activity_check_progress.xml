@@ -42,10 +42,20 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/fab_margin"
+        android:scaleType="center"
+        app:layout_anchor="@+id/app_bar"
+        app:layout_anchorGravity="left|center"
+        app:srcCompat="@drawable/ic_whiteflag" />
+
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/upgradeButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/fab_margin"
+        android:scaleType="center"
         app:layout_anchor="@+id/app_bar"
         app:layout_anchorGravity="right|center"
-        app:srcCompat="@android:drawable/ic_media_rew"
-        android:scaleType="center"/>
+        app:srcCompat="@drawable/ic_mapupgrade" />
 
     <ImageButton
         android:background="?android:selectableItemBackground"

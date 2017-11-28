@@ -10,16 +10,12 @@ import android.content.res.Resources
 import android.location.Location
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.support.design.widget.Snackbar
+import android.os.Vibrator
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.view.animation.AccelerateInterpolator
-import android.view.animation.AlphaAnimation
-import android.view.animation.AnimationSet
-import android.view.animation.DecelerateInterpolator
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.*
@@ -29,12 +25,10 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
-import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_maps.*
 import java.io.File
 import java.io.FileInputStream
 import java.lang.ref.WeakReference
-import java.net.MalformedURLException
 import java.util.*
 
 
@@ -46,7 +40,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
     private val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
     private lateinit var mLastLocation : Location
     private var receiver = GeofencingReceiver()
+    private val dbCollectedWordsHandler = MyCollectedWordsDBHandler(this)
     private val dbPlacemarkHandler = MyPlacemarkDBHandler(this)
+    private val dbSongHandler = MySongDBHandler(this)
     private val mapMarkersWithGeofences = hashMapOf<String, Pair<Marker, Geofence>>()
 
     private val TAG = "MapsActivity"
@@ -71,6 +67,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                 .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build()
+        mGoogleApiClient.connect()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -81,18 +78,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
 
     override fun onDestroy() {
         super.onDestroy()
+        if (mGoogleApiClient.isConnected){
+            mGoogleApiClient.disconnect()
+        }
         unregisterReceiver(receiver)
     }
 
-    override fun onStart(){
-        super.onStart()
-        mGoogleApiClient.connect()
+    override fun onResume(){
+        super.onResume()
+        if (getCurrentSong() != 0){
+            score.text = score()
+        }
     }
 
-    override fun onStop(){
-        super.onStop()
-        if (mGoogleApiClient.isConnected){
-            mGoogleApiClient.disconnect()
+    override fun onStart() {
+        super.onStart()
+        if (getCurrentSong() != 0){
+            score.text = score()
         }
     }
 
@@ -140,20 +142,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION)
         }
     }
-    val geofenceRecalculationDilution = 5
+    val geofenceRecalculationDilution = 10
     var currentGeofencePoll = 0
     override fun onLocationChanged(current : Location?) {
         if (current == null){
             Log.i(TAG, "[onLocationChanged] Location unknown")
         } else {
-            Log.i(TAG, """[onLocationChanged] Lat/long now
-            (${current.getLatitude()},
-            ${current.getLongitude()})""")
             /////////////////////////////////////////////////////
-            if (currentGeofencePoll % geofenceRecalculationDilution == 0){
-                updateGeofenceMonitoring(current.getLatitude(), current.getLongitude())
+            if (mapMarkersWithGeofences.size == 0) {
+                Log.i(TAG, "no geofences to add")
+            } else {
+                // update geofences once every 'geofenceRecalculationDilution' location updates
+                if (currentGeofencePoll % geofenceRecalculationDilution == 0){
+                    updateGeofenceMonitoring(current.getLatitude(), current.getLongitude())
+                }
+                currentGeofencePoll = (currentGeofencePoll + 1) % geofenceRecalculationDilution
             }
-            currentGeofencePoll = (currentGeofencePoll + 1) % geofenceRecalculationDilution
             ////////////////////////////////////////////////////
         }
     }
@@ -201,14 +205,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
             mMap.uiSettings.isMyLocationButtonEnabled = true
             mMap.clear()
             try {
-                val file = File(applicationContext.filesDir, "map5song" + getInfo("currentSong") + "cacheKml.kml")
+                val file = File(applicationContext.filesDir, "map5song" + getCurrentSong() + "cacheKml.kml")
                 val input = FileInputStream(file)
                 try {
                     //KmlLayer(mMap, input, applicationContext).addLayerToMap()
 
                     val mapMarkerOptions = hashMapOf<String, MarkerOptions>()
-                    dbPlacemarkHandler.populateList(mapMarkerOptions)
-                    //@todo This is horribly slow, kick to an asynch task
+                    dbPlacemarkHandler.populateHashMap(mapMarkerOptions)
+                    //@todo This is horribly slow, kick to an asynch task ///// also terrible bug when no location, just crashes
                     for (key in mapMarkerOptions.keys){
                         val marker = mMap.addMarker(mapMarkerOptions[key])
                         val geofence = Geofence.Builder()
@@ -219,7 +223,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                                         40f
                                 )
                                 .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                                .setNotificationResponsiveness(1000)
+                                .setNotificationResponsiveness(0)
                                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
                                 .build()
                         mapMarkersWithGeofences[key] = Pair(marker, geofence)
@@ -239,42 +243,43 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         }
     }
 
-    fun getInfo(key: String): Int{
+    fun getCurrentSong(): Int{
         val sharedPref = getSharedPreferences("permInts", Context.MODE_PRIVATE)
-        return sharedPref.getInt(key, 0)
+        return sharedPref.getInt("currentSong", 0)
     }
 
-//    private val geofenceIds = mutableListOf<String>()
+
     fun updateGeofenceMonitoring(lat: Double, long: Double){
         try{
-//            if (!mGoogleApiClient.isConnected)  {
-//                Log.e(TAG, "api client not connected")
-//            } else if (!geofenceIds.isEmpty()) {
-//                LocationServices.GeofencingApi.removeGeofences(mGoogleApiClient, geofenceIds)
-//            }
-//            geofenceIds.clear()
             val geofences = mutableListOf<Geofence>()
             val mrkrsAndGeofences = mutableListOf<Pair<Marker, Geofence>>()
 
             for (key in mapMarkersWithGeofences.keys){
                 mrkrsAndGeofences.add(mapMarkersWithGeofences[key]!!)
             }
-            mrkrsAndGeofences.sortBy { haversine(lat, long, it.first.position.latitude, it.first.position.longitude) }
-            for (x in (0..50)){
-                geofences.add(mrkrsAndGeofences[x].second)
-//                geofenceIds.add(mrkrsAndGeofences[x].second.requestId)
+
+            if (mrkrsAndGeofences.size > 50){
+                mrkrsAndGeofences.sortBy { haversine(lat, long, it.first.position.latitude, it.first.position.longitude) }
+                for (x in (0..50)){
+                    geofences.add(mrkrsAndGeofences[x].second)
+                }
+            } else {
+                for (mrkrAndGeofence in mrkrsAndGeofences){
+                    geofences.add(mrkrAndGeofence.second)
+                }
             }
-
-            val geofenceRequest = GeofencingRequest.Builder()
-                    .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-                    .addGeofences(geofences).build()
-
-            val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
-            val pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
 
             if (!mGoogleApiClient.isConnected)  {
                 Log.e(TAG, "api client not connected")
             } else {
+
+                val geofenceRequest = GeofencingRequest.Builder()
+                        .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
+                        .addGeofences(geofences).build()
+
+                val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
+                val pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+
                 LocationServices.GeofencingApi.removeGeofences(mGoogleApiClient, pendingIntent)
                 LocationServices.GeofencingApi.addGeofences(mGoogleApiClient, geofenceRequest, pendingIntent)
                         .setResultCallback({ status ->
@@ -306,11 +311,32 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         return (R * c) * 1000
     }
 
+    inner class GeofencingReceiver : BroadcastReceiver() {
+        val ACTION_RESP = "com.example.wilko.songle.GEOFENCE_PROCESSED"
+        override fun onReceive(context: Context, intent: Intent) {
+            val nameOfPlacemark = intent.getStringExtra("name")
+
+            val idx = nameOfPlacemark.split(":")
+            LyricWordAdder(idx[0].toInt(), idx[1].toInt(), WeakReference<Context>(applicationContext)).execute()
+
+            if (mapMarkersWithGeofences[nameOfPlacemark] != null){
+                mapMarkersWithGeofences[nameOfPlacemark]!!.first.remove()
+                mapMarkersWithGeofences.remove(nameOfPlacemark)
+                dbPlacemarkHandler.delete(nameOfPlacemark)
+                dbCollectedWordsHandler.add(CollectedWord(nameOfPlacemark))
+                collectedWord()
+            }
+        }
+    }
+
     fun collectedWord(){
         point.imageAlpha = 255
         val task = Alpha0()
         val timer = Timer()
         timer.schedule(task, 500.toLong())
+        (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(500)
+
+        score.text = score()
     }
 
     private inner class Alpha0: TimerTask(){
@@ -321,72 +347,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         }
     }
 
-    inner class GeofencingReceiver : BroadcastReceiver() {
-        val ACTION_RESP = "com.example.wilko.songle.GEOFENCE_PROCESSED"
-        override fun onReceive(context: Context, intent: Intent) {
-            val nameOfPlacemark = intent.getStringExtra("name")
-            Log.d(TAG, String.format("GEOFENCE_TRANSITION_ENTER on %s", nameOfPlacemark))
-
-            val idx = nameOfPlacemark.split(":")
-            //addWordToLyric(idx[0].toInt(), idx[1].toInt())
-            LyricWordAdder(idx[0].toInt(), idx[1].toInt(), WeakReference<Context>(applicationContext)).execute()
-
-            if (mapMarkersWithGeofences[nameOfPlacemark] != null){
-                mapMarkersWithGeofences[nameOfPlacemark]!!.first.remove()
-                mapMarkersWithGeofences.remove(nameOfPlacemark)
-                dbPlacemarkHandler.delete(nameOfPlacemark)
-                collectedWord()
-            }
-        }
-
-        fun addWordToLyric(row: Int, column: Int){
-            val dbSongHandler = MySongDBHandler(applicationContext)
-            val originalLyrics = dbSongHandler.getProp(getCurrSong(), "lyric")
-
-            val newString = StringBuilder()
-            val liriyc = getLyric()
-            val lines = liriyc.split("\n")
-            val origLines = originalLyrics.split("\n")
-            for (lineNo in (0..lines.size-1)){
-                val words = lines[lineNo].split("\t")
-                val origWords = origLines[lineNo].split(" ")
-                for (wordNo in (0..words.size-1)){
-                    if ((lineNo + 1 == row) && (wordNo + 1 == column)){
-                        if (wordNo == words.size -1){
-                            newString.append(origWords[wordNo])
-                        } else {
-                            newString.append(origWords[wordNo]+"\t")
-                        }
-                    } else {
-                        if (wordNo == words.size -1){
-                            newString.append(words[wordNo])
-                        } else {
-                            newString.append(words[wordNo]+"\t")
-                        }
-                    }
-                }
-                if (lineNo != lines.size-1){
-                    newString.append("\n")
-                }
-            }
-            saveLyric(newString.toString())
-        }
-
-        fun saveLyric(string: String){
-            val sharedPref = getSharedPreferences("permStrs", Context.MODE_PRIVATE)
-            val editor = sharedPref.edit()
-            editor.putString("lyric", string)
-            editor.apply()
-        }
-
-        fun getLyric(): String{
-            val sharedPref = getSharedPreferences("permStrs", Context.MODE_PRIVATE)
-            return sharedPref.getString("lyric", "")
-        }
-
-        fun getCurrSong(): Int{
-            val sharedPref = getSharedPreferences("permInts", Context.MODE_PRIVATE)
-            return sharedPref.getInt("currentSong", 0)
-        }
+    fun score() : String {
+        val noOfWords = dbSongHandler.getProp(getCurrentSong(), "noOfWords").toDouble()
+        val collectedWords = dbCollectedWordsHandler.howMany()
+        val score = 3*(10*Math.log10((collectedWords/noOfWords)+0.1)+10)
+        return "%.2f".format(score)
     }
 }

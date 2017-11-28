@@ -77,10 +77,10 @@ class XmlSongParser : XmlParser() {
                 "Number" -> number = readProp(parser, parser.name)
                 "Artist" -> artist = readProp(parser, parser.name)
                 "Title" -> title = readProp(parser, parser.name)
-                "Link" -> link = readProp(parser, parser.name)
+                "Link" -> link = readProp(parser, parser.name).split("/").last()
                 else -> skip(parser)
             }
         }
-        return Song(number.toInt(), artist, title, link, "", "", "", "", "", "")
+        return Song(number.toInt(), artist, title, link, "", 0, "", "", "", "", "")
     }
 }
