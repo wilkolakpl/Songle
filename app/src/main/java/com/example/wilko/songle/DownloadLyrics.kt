@@ -2,7 +2,6 @@ package com.example.wilko.songle
 
 import android.content.ContentValues
 import android.content.Context
-import android.util.Log
 import org.apache.commons.io.IOUtils
 import java.lang.ref.WeakReference
 import java.util.*
@@ -10,7 +9,7 @@ import java.util.*
 /**
  * Created by wilko on 10/25/2017.
  */
-class DownloadLyrics(caller : DownloadCompleteListener<Pair<DownloadType, List<Song>>>, val wContext : WeakReference<Context>) : DownloadTask<Pair<DownloadType, List<Song>>>(caller){
+class DownloadLyrics(caller : AsyncCompleteListener<Pair<DownloadType, List<Song>>>, val wContext : WeakReference<Context>) : DownloadTask<Pair<DownloadType, List<Song>>>(caller){
 
     override fun loadFromNetwork(urlString: String) : Pair<DownloadType, List<Song>> {
         val context = wContext.get()
@@ -28,7 +27,7 @@ class DownloadLyrics(caller : DownloadCompleteListener<Pair<DownloadType, List<S
                 val noOfWords = lyricString.split(" ") as MutableList<String>
                 noOfWords.removeAll(Arrays.asList(""))
                 ctn.put("noOfWords", noOfWords.size)
-                db.update("songs", ctn, "number=" + song.number, null) //@todo also add the no of words to the db
+                db.update("songs", ctn, "number=" + song.number, null)
             }
             db.close()
         }

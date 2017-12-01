@@ -1,15 +1,13 @@
 package com.example.wilko.songle
 
 import android.content.Context
-import com.google.android.gms.maps.model.BitmapDescriptor
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import java.lang.ref.WeakReference
 
 /**
  * Created by wilko on 10/24/2017.
  */
 
-class DownloadPinPngs(caller : DownloadCompleteListener<Pair<DownloadType, List<Song>>>, val wContext : WeakReference<Context>) : DownloadTask<Pair<DownloadType, List<Song>>>(caller){
+class DownloadPinPngs(caller : AsyncCompleteListener<Pair<DownloadType, List<Song>>>, val wContext : WeakReference<Context>) : DownloadTask<Pair<DownloadType, List<Song>>>(caller){
     override fun loadFromNetwork(urlString: String) : Pair<DownloadType, List<Song>> {
         val pinUnclassifiedStream = downloadUrl(urlString + "wht-blank.png")
         val pinBoringStream = downloadUrl(urlString +"ylw-blank.png")

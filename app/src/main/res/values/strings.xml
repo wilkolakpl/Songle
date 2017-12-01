@@ -3,7 +3,7 @@
     <string name="api_key">AIzaSyBvFWkSfguqLEFZH3psKGNzQao2zwnXzaM</string>
     <!--<![CDATA[<]]>==-->
     <string name="score_descr">score:</string>
-    <string name="ready_to_guess_song">Ready to guess?</string>
+    <string name="map_upgrade">Map upgrade!</string>
     <string name="how_did_you_do">the suspense…</string>
     <string name="correct_guess">CORRECT!</string>
     <string name="incorrect_guess">INCORRECT!</string>
@@ -11,6 +11,8 @@
     <string name="no_internet">Please connect to the internet</string>
     <string name="no_internet_but_available">No internet, but available offline</string>
     <string name="error_downloading">Unable download songs</string>
+    <string name="continue_playing">Continue playing!</string>
+    <string name="start_new_game">Start new game</string>
 
     <string name="downloading_xml">Downloading a list of songs</string>
     <string name="downloading_pngs">Downloading images of pins</string>

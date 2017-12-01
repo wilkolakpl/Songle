@@ -7,7 +7,7 @@ import java.lang.ref.WeakReference
  * Created by wilko on 10/13/2017.
  */
 
-class DownloadXmlTaskSong(caller : DownloadCompleteListener<Pair<DownloadType, List<Song>>>, val wContext : WeakReference<Context>) : DownloadTask<Pair<DownloadType, List<Song>>>(caller){
+class DownloadXmlTaskSong(caller : AsyncCompleteListener<Pair<DownloadType, List<Song>>>, val wContext : WeakReference<Context>) : DownloadTask<Pair<DownloadType, List<Song>>>(caller){
     //val result = StringBuilder()
     override fun loadFromNetwork(urlString: String) : Pair<DownloadType, List<Song>>{
         val stream = downloadUrl(urlString)

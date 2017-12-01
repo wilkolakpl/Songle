@@ -22,13 +22,13 @@
         app:layout_constraintVertical_bias="0.0" />
 
     <TextView
-        android:id="@+id/textSongTitle"
+        android:id="@+id/mainTextLog"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:layout_marginStart="60dp"
         android:layout_marginEnd="60dp"
-        android:text="@string/ready_to_guess_song"
+        android:text="@string/continue_playing"
         android:textAlignment="center"
         android:textColor="#fff"
         android:textSize="20sp"

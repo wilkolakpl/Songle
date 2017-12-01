@@ -26,9 +26,6 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import kotlinx.android.synthetic.main.activity_maps.*
-import java.io.File
-import java.io.FileInputStream
-import java.lang.ref.WeakReference
 import java.util.*
 
 
@@ -142,13 +139,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION)
         }
     }
+
     val geofenceRecalculationDilution = 10
     var currentGeofencePoll = 0
     override fun onLocationChanged(current : Location?) {
         if (current == null){
             Log.i(TAG, "[onLocationChanged] Location unknown")
         } else {
-            /////////////////////////////////////////////////////
             if (mapMarkersWithGeofences.size == 0) {
                 Log.i(TAG, "no geofences to add")
             } else {
@@ -158,7 +155,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                 }
                 currentGeofencePoll = (currentGeofencePoll + 1) % geofenceRecalculationDilution
             }
-            ////////////////////////////////////////////////////
         }
     }
 
@@ -205,35 +201,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
             mMap.uiSettings.isMyLocationButtonEnabled = true
             mMap.clear()
             try {
-                val file = File(applicationContext.filesDir, "map5song" + getCurrentSong() + "cacheKml.kml")
-                val input = FileInputStream(file)
-                try {
-                    //KmlLayer(mMap, input, applicationContext).addLayerToMap()
-
-                    val mapMarkerOptions = hashMapOf<String, MarkerOptions>()
-                    dbPlacemarkHandler.populateHashMap(mapMarkerOptions)
-                    //@todo This is horribly slow, kick to an asynch task ///// also terrible bug when no location, just crashes
-                    for (key in mapMarkerOptions.keys){
-                        val marker = mMap.addMarker(mapMarkerOptions[key])
-                        val geofence = Geofence.Builder()
-                                .setRequestId(key)
-                                .setCircularRegion(
-                                        marker.position.latitude,
-                                        marker.position.longitude,
-                                        40f
-                                )
-                                .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                                .setNotificationResponsiveness(0)
-                                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-                                .build()
-                        mapMarkersWithGeofences[key] = Pair(marker, geofence)
-                    }
-
-                    //for (x in (1..600)){
-                        //mMap.addMarker(MarkerOptions().position(LatLng(55.9445390,-3.1885250))).setIcon(bs)
-                    //}
-                } finally {
-                    input.close()
+                val mapMarkerOptions = hashMapOf<String, MarkerOptions>()
+                dbPlacemarkHandler.populateHashMap(mapMarkerOptions)
+                //@todo This is horribly slow, kick to an asynch task ///// also terrible bug when no location, just crashes
+                for (key in mapMarkerOptions.keys){
+                    val marker = mMap.addMarker(mapMarkerOptions[key])
+                    val geofence = Geofence.Builder()
+                            .setRequestId(key)
+                            .setCircularRegion(
+                                    marker.position.latitude,
+                                    marker.position.longitude,
+                                    40f
+                            )
+                            .setExpirationDuration(Geofence.NEVER_EXPIRE)
+                            .setNotificationResponsiveness(0)
+                            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                            .build()
+                    mapMarkersWithGeofences[key] = Pair(marker, geofence)
                 }
             } finally {
                 //@todo
@@ -315,9 +299,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         val ACTION_RESP = "com.example.wilko.songle.GEOFENCE_PROCESSED"
         override fun onReceive(context: Context, intent: Intent) {
             val nameOfPlacemark = intent.getStringExtra("name")
-
-            val idx = nameOfPlacemark.split(":")
-            LyricWordAdder(idx[0].toInt(), idx[1].toInt(), WeakReference<Context>(applicationContext)).execute()
 
             if (mapMarkersWithGeofences[nameOfPlacemark] != null){
                 mapMarkersWithGeofences[nameOfPlacemark]!!.first.remove()

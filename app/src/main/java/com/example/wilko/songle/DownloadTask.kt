@@ -13,7 +13,7 @@ import java.net.URL
  * Created by wilko on 10/13/2017.
  */
 
-abstract class DownloadTask<E>(private val caller : DownloadCompleteListener<E>) :
+abstract class DownloadTask<E>(private val caller : AsyncCompleteListener<E>) :
         AsyncTask<String, Void, E?>() {
 
     val TAG = "DownloadTask"
@@ -48,7 +48,7 @@ abstract class DownloadTask<E>(private val caller : DownloadCompleteListener<E>)
 
     override fun onPostExecute(result: E?) {
         super.onPostExecute(result)
-        caller.downloadComplete(result)
+        caller.asyncComplete(result)
     }
 
     @Throws(IOException::class)

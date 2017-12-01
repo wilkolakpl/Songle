@@ -18,9 +18,9 @@ import java.lang.Math.pow
 import java.lang.ref.WeakReference
 import java.util.*
 import android.graphics.PorterDuff
+import android.os.Vibrator
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.async
-import org.jetbrains.anko.coroutines.experimental.asReference
 import org.jetbrains.anko.coroutines.experimental.bg
 
 
@@ -30,8 +30,6 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     private val dbSongHandler = MySongDBHandler(this)
     private val dbPlacemarkHandler = MyPlacemarkDBHandler(this)
     private val dbCollectedWordsHandler = MyCollectedWordsDBHandler(this)
-    private var state = 0
-    private var mapNo = 0
     private lateinit var myRenderer : MyRenderer
     private lateinit var titleStr : String
 
@@ -40,8 +38,6 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        mapNo = getIntInfo("mapNo")
-
         myRenderer = MyRenderer(applicationContext)
         surfaceView.setRenderer(myRenderer)
 
@@ -49,24 +45,27 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         this.registerReceiver(receiver, filter)
 
         mapButton.setOnClickListener {
-            if (getIntInfo("cached") == 5){
+            if (getIntInfo("newGame") == 1){
+                startNewGame()
+            } else if(getIntInfo("cached") == 5){
                 val intent = Intent(this, MapsActivity::class.java)
                 startActivityForResult(intent, 1)
             } else {
-                textSongTitle.text = getString(R.string.downloading_interrupted)
+                mainTextLog.text = getString(R.string.downloading_interrupted)
             }
-            /*Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()*/
         }
 
-        checkProgressButton.setOnClickListener{
-            if (getIntInfo("cached") == 5){
+        checkProgressButton.setOnClickListener {
+            if (getIntInfo("newGame") == 1){
+                startNewGame()
+            } else if (getIntInfo("cached") == 5){
                 val intent = Intent(this, CheckProgressActivity::class.java)
                 startActivityForResult(intent, 1)
             } else {
-                textSongTitle.text = getString(R.string.downloading_interrupted)
+                mainTextLog.text = getString(R.string.downloading_interrupted)
             }
         }
+        continueTxt()
     }
 
     override fun onDestroy() {
@@ -80,17 +79,12 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         //dismiss views and fm.beginTransaction().remove(mDataFragment).commit()
     }
 
-    override fun onResume(){
-        super.onResume()
-        if (getIntInfo("currentSong") != 0){
+    fun continueTxt() {
+        if (getIntInfo("cached") == 5 && getIntInfo("newGame") == 0){
             score.text = score()
-        }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        if (getIntInfo("currentSong") != 0){
-            score.text = score()
+            mainTextLog.text = getString(R.string.continue_playing)
+        } else {
+            mainTextLog.text = getString(R.string.start_new_game)
         }
     }
 
@@ -101,7 +95,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         return "%.2f".format(score)
     }
 
-    fun score(won : Boolean) : String {
+    fun score(won: Boolean) : String {
         val noOfWords = dbSongHandler.getProp(getIntInfo("currentSong"), "noOfWords").toDouble()
         val collectedWords = dbCollectedWordsHandler.howMany()
         var score = 3*(10*Math.log10((collectedWords/noOfWords)+0.1)+10)
@@ -136,46 +130,49 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         return sharedPref.getInt(key, 0)
     }
 
-    fun handRoll(x: Int){
+    // variable representing which pose the hand is currently in
+    private var state = 0
+    fun handRoll(won: Boolean){
+        mapButton.isEnabled = false
+        checkProgressButton.isEnabled = false
+
+        val x : Int
+        if (won) {
+            x = 2
+        } else {
+            x = 1
+        }
         state = x-1
+
         for (it in 1..10){
             val task = FlagChange()
             val timer = Timer()
             timer.schedule(task, ((pow((it-11).toDouble(), 2.toDouble()))*40).toLong())
+        }
 
-        }
-        var won = false
-        if (x == 2) {
-            won = true
-        }
-        val task = TitleChange(won)
+        val task = FinalResult(won)
         val timer = Timer()
         timer.schedule(task, 4000)
     }
 
-    private fun changeStateFlag(){
-        state = (state + 1) % 3
-        myRenderer.changeStateFlag(state)
-    }
-
-    private fun changeTitle(){
-        textSongTitle.text = titleStr
-    }
-
-    private inner class FlagChange(): TimerTask(){
+    private inner class FlagChange: TimerTask(){
         override fun run(){
-            changeStateFlag()
+            state = (state + 1) % 3
+            myRenderer.changeStateFlag(state)
         }
     }
 
-    private inner class TitleChange(val won : Boolean): TimerTask(){
+    private inner class FinalResult(val won : Boolean): TimerTask(){
         override fun run(){
             runOnUiThread{
-                changeTitle()
+                mainTextLog.text = titleStr
+                (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(500)
                 if (won){
                     playVideo()
                     score.text = score(won)
                 }
+                mapButton.isEnabled = true
+                checkProgressButton.isEnabled = true
             }
         }
     }
@@ -184,7 +181,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         val mBuilder = AlertDialog.Builder(this@MainActivity)
         val videoView = layoutInflater.inflate(R.layout.video, null)
         val videoFragment = supportFragmentManager.findFragmentById(R.id.videoView) as YouTubePlayerSupportFragment
-        videoFragment.initialize(getString(R.string.api_key), this)
+        videoFragment.initialize(getString(R.string.google_maps_key), this)
         mBuilder.setView(videoView)
         val videoPopup = mBuilder.create()
         videoPopup.window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
@@ -224,7 +221,6 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                 startActivity(intent)
                 true
             }
-
             else -> super.onOptionsItemSelected(item)
         }
     }
@@ -232,90 +228,93 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == 1){
+            // update the displayed score when returning from Map or Progress
+            score.text = score()
             if(resultCode == Activity.RESULT_OK && data != null){
                 val songNo = data.getIntExtra("songNo", 0)
                 val didUpgrade = data.getBooleanExtra("upgrade", false)
                 val didReset = data.getBooleanExtra("reset", false)
                 if (songNo != 0) {
-                    textSongTitle.text = getString(R.string.how_did_you_do)
+                    mainTextLog.text = getString(R.string.how_did_you_do)
                     if (songNo == getIntInfo("currentSong")){
                         titleStr = getString(R.string.correct_guess)
-                        handRoll(2)
+                        handRoll(true)
                     } else {
                         titleStr = getString(R.string.incorrect_guess)
-                        handRoll(1)
+                        handRoll(false)
                     }
-                } else if(didUpgrade) {
+                    saveIntInfo("newGame", 1)
+                } else if (didUpgrade) {
+                    mainTextLog.text = getString(R.string.map_upgrade)
                     showDifficultyDialog()
-                } else if(didReset) {
-                    textSongTitle.text = getString(R.string.downloading_xml)
-                    DownloadXmlTaskSong(NetworkReceiver(), WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
+                } else if (didReset) {
+                    startNewGame()
                 }
-            }
-            else{
-                textSongTitle.text = getString(R.string.ready_to_guess_song)
+            } else {
+                mainTextLog.text = getString(R.string.continue_playing)
             }
         }
     }
 
-    private inner class NetworkReceiver : BroadcastReceiver(), DownloadCompleteListener<Pair<DownloadType, List<Song>>> {
+    fun startNewGame() {
+        saveIntInfo("newGame", 1)
+        mainTextLog.text = getString(R.string.downloading_xml)
+        DownloadXmlTaskSong(NetworkReceiver(), WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
+    }
+
+    private inner class NetworkReceiver : BroadcastReceiver(), AsyncCompleteListener<Pair<DownloadType, List<Song>>> {
         override fun onReceive(context: Context, intent: Intent) {
 
             val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val networkInfo = connMgr.activeNetworkInfo
             if (networkInfo != null) {
-                if (getIntInfo("cached") == 5){
-                    textSongTitle.text = getString(R.string.downloading_unnecessary)
-                } else {
-                    textSongTitle.text = getString(R.string.downloading_xml)
-                    DownloadXmlTaskSong(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
+                if (getIntInfo("cached") != 5){
+                    startNewGame()
                 }
             } else {
-                if (getIntInfo("cached") == 5){
-                    textSongTitle.text = getString(R.string.no_internet_but_available)
-                } else {
-                    textSongTitle.text = getString(R.string.no_internet)
+                if (getIntInfo("cached") != 5){
+                    mainTextLog.text = getString(R.string.no_internet)
                 }
             }
         }
 
-        override fun downloadComplete(result: Pair<DownloadType, List<Song>>?){
+        override fun asyncComplete(result: Pair<DownloadType, List<Song>>?){
             // stage the downloads, keeping flags to indicate levels of completion
             if (result != null){
                 if (result.first == DownloadType.SONGS) {
-                    textSongTitle.text = getString(R.string.downloading_pngs)
+                    mainTextLog.text = getString(R.string.downloading_pngs)
                     dbSongHandler.deleteAll()
                     dbSongHandler.addAll(result.second)
                     DownloadPinPngs(this, WeakReference<Context>(applicationContext)).execute("http://maps.google.com/mapfiles/kml/paddle/")
                     saveIntInfo("cached", 1)
                 } else if (result.first == DownloadType.NO_NEW_SONGS && getIntInfo("cached") == 5) {
-                    textSongTitle.text = getString(R.string.downloading_unnecessary)
+                    mainTextLog.text = getString(R.string.downloading_unnecessary)
                     chooseSong()
                 } else if (result.first == DownloadType.IMG && getIntInfo("cached") == 1) {
-                    textSongTitle.text = getString(R.string.downloading_kmls)
+                    mainTextLog.text = getString(R.string.downloading_kmls)
                     DownloadKmlTaskLayers(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
                     saveIntInfo("cached", 2)
                 } else if (result.first == DownloadType.KLMS && getIntInfo("cached") == 2) {
-                    textSongTitle.text = getString(R.string.downloading_lyrics)
+                    mainTextLog.text = getString(R.string.downloading_lyrics)
                     DownloadLyrics(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
                     saveIntInfo("cached", 3)
                 } else if (result.first == DownloadType.LYRIC && getIntInfo("cached") == 3) {
-                    textSongTitle.text = getString(R.string.downloading_complete)
+                    mainTextLog.text = getString(R.string.downloading_complete)
                     chooseSong()
                     saveIntInfo("cached", 4)
                 } else {
                     // edge case: when the download has been interrupted - the song list timestamp
                     // has been preserved, but later staging has failed - just restart the download
-                    textSongTitle.text = getString(R.string.downloading_xml)
+                    mainTextLog.text = getString(R.string.downloading_xml)
                     saveStrInfo("timestamp", "reset")
                     DownloadXmlTaskSong(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
                 }
             } else {
                 if (getIntInfo("cached") == 5){
-                    textSongTitle.text = getString(R.string.no_internet_but_available)
+                    mainTextLog.text = getString(R.string.no_internet_but_available)
                     chooseSong()
                 } else {
-                    textSongTitle.text = getString(R.string.no_internet)
+                    mainTextLog.text = getString(R.string.no_internet)
                     saveIntInfo("cached", 0)
                 }
             }
@@ -335,14 +334,10 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         }
         saveIntInfo("currentSong", random)
 
-        // resetting the collected words database, and preparing the to-be displayed lyric string
+        // resetting the collected words database
         dbCollectedWordsHandler.deleteAll()
-        var lyric = dbSongHandler.getProp(getIntInfo("currentSong"), "lyric")
-        lyric = lyric.replace(" ","\u2003")
-        lyric = lyric.replace(Regex("[^\u2003\n]"), " ")
-        saveStrInfo("lyric", lyric)
 
-        textSongTitle.text = getIntInfo("currentSong").toString()
+        mainTextLog.text = getIntInfo("currentSong").toString()
         showDifficultyDialog()
     }
 
@@ -364,84 +359,61 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
             alert.setCanceledOnTouchOutside(false)
         }
         if (currentMapNo < 5){
-            diff5.setOnClickListener {
-                mapNo = 5
-                alert.dismiss()
-                loadKml()
-            }
+            setActiveButton(alert, diff5, 5)
         } else {
-            val res = baseContext.resources.getDrawable(R.drawable.ic_diff5).mutate()
-            res.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN)
-            diff5.setImageDrawable(res)
-            diff5.isEnabled = false
+            grayOutButton(diff5, R.drawable.ic_diff5)
         }
         if (currentMapNo < 4){
-            diff4.setOnClickListener {
-                mapNo = 4
-                alert.dismiss()
-                loadKml()
-            }
+            setActiveButton(alert, diff4, 4)
         } else {
-            val res = baseContext.resources.getDrawable(R.drawable.ic_diff4).mutate()
-            res.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN)
-            diff4.setImageDrawable(res)
-            diff4.isEnabled = false
+            grayOutButton(diff4, R.drawable.ic_diff4)
         }
         if (currentMapNo < 3){
-            diff3.setOnClickListener {
-                mapNo = 3
-                alert.dismiss()
-                loadKml()
-            }
+            setActiveButton(alert, diff3, 3)
         } else {
-            val res = baseContext.resources.getDrawable(R.drawable.ic_diff3).mutate()
-            res.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN)
-            diff3.setImageDrawable(res)
-            diff3.isEnabled = false
+            grayOutButton(diff3, R.drawable.ic_diff3)
         }
         if (currentMapNo < 2){
-            diff2.setOnClickListener {
-                mapNo = 2
-                alert.dismiss()
-                loadKml()
-            }
+            setActiveButton(alert, diff2, 2)
         } else {
-            val res = baseContext.resources.getDrawable(R.drawable.ic_diff2).mutate()
-            res.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN)
-            diff2.setImageDrawable(res)
-            diff2.isEnabled = false
+            grayOutButton(diff2, R.drawable.ic_diff2)
         }
         if (currentMapNo < 1){
-            diff1.setOnClickListener {
-                mapNo = 1
-                alert.dismiss()
-                loadKml()
-            }
+            setActiveButton(alert, diff1, 1)
         } else {
-            val res = baseContext.resources.getDrawable(R.drawable.ic_diff1).mutate()
-            res.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN)
-            diff1.setImageDrawable(res)
-            diff1.isEnabled = false
+            grayOutButton(diff1, R.drawable.ic_diff1)
         }
         alert.show()
 
         score.text = score()
     }
 
+    fun grayOutButton(ib : ImageButton, resource : Int){
+        val res = baseContext.resources.getDrawable(resource).mutate()
+        res.setColorFilter(Color.GRAY, PorterDuff.Mode.SRC_IN)
+        ib.setImageDrawable(res)
+        ib.isEnabled = false
+    }
 
-    fun loadKml(){
-        if (mapNo != 0){
-            async(UI){
-                dbPlacemarkHandler.deleteAll()
-                val kmlFile = FileInputStream(filesDir.toString() + "/map" + mapNo + "song" + getIntInfo("currentSong") + "cacheKml.kml")
-                val kmlParser = KmlParser()
-                val placemarks = bg{kmlParser.parse(kmlFile, applicationContext)}
-                dbPlacemarkHandler.addAll(placemarks.await())
-                // the flagging is delayed until the background thread's callback
-                if (placemarks.await() != null) {
-                    saveIntInfo("mapNo", mapNo)
-                    saveIntInfo("cached", 5)
-                }
+    fun setActiveButton(ad: AlertDialog, ib: ImageButton, mapNo: Int){
+        ib.setOnClickListener {
+            loadKml(mapNo)
+            ad.dismiss()
+        }
+    }
+
+    fun loadKml(mapNo : Int){
+        async(UI){
+            dbPlacemarkHandler.deleteAll()
+            val kmlFile = FileInputStream(filesDir.toString() + "/map" + mapNo + "song" + getIntInfo("currentSong") + "cacheKml.kml")
+            val kmlParser = KmlParser()
+            val placemarks = bg{kmlParser.parse(kmlFile, applicationContext)}
+            dbPlacemarkHandler.addAll(placemarks.await())
+            // the flagging is delayed until the background thread's callback
+            if (placemarks.await() != null) {
+                saveIntInfo("mapNo", mapNo)
+                saveIntInfo("cached", 5)
+                saveIntInfo("newGame", 0)
             }
         }
     }

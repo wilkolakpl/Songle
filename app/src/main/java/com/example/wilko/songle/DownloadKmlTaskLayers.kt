@@ -13,7 +13,7 @@ import java.io.File
  * Created by wilko on 10/22/2017.
  */
 
-class DownloadKmlTaskLayers(caller : DownloadCompleteListener<Pair<DownloadType, List<Song>>>, val wContext : WeakReference<Context>) : DownloadTask<Pair<DownloadType, List<Song>>>(caller){
+class DownloadKmlTaskLayers(caller : AsyncCompleteListener<Pair<DownloadType, List<Song>>>, val wContext : WeakReference<Context>) : DownloadTask<Pair<DownloadType, List<Song>>>(caller){
     override fun loadFromNetwork(urlString: String) : Pair<DownloadType, List<Song>> {
 
         val context = wContext.get()
