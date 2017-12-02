@@ -1,10 +1,7 @@
 package com.example.wilko.songle
 
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.location.Location
@@ -36,11 +33,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
     private lateinit var mGoogleApiClient: GoogleApiClient
     private val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
     private lateinit var mLastLocation : Location
-    private var receiver = GeofencingReceiver()
     private val dbCollectedWordsHandler = MyCollectedWordsDBHandler(this)
     private val dbPlacemarkHandler = MyPlacemarkDBHandler(this)
     private val dbSongHandler = MySongDBHandler(this)
-    private val mapMarkersWithGeofences = hashMapOf<String, Pair<Marker, Geofence>>()
+    private val mapMarkers = hashMapOf<String, Marker>()
 
     private val TAG = "MapsActivity"
 
@@ -49,10 +45,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
 
         setContentView(R.layout.activity_maps)
         point.imageAlpha = 0
-
-        val filter = IntentFilter(GeofencingReceiver().ACTION_RESP)
-        filter.addCategory(Intent.CATEGORY_DEFAULT)
-        registerReceiver(receiver, filter)
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
@@ -78,7 +70,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         if (mGoogleApiClient.isConnected){
             mGoogleApiClient.disconnect()
         }
-        unregisterReceiver(receiver)
     }
 
     override fun onResume(){
@@ -140,22 +131,100 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         }
     }
 
-    val geofenceRecalculationDilution = 10
-    var currentGeofencePoll = 0
+    private val recalculationDilution = 5
+    private val closeNo = 50
+    private var currentPoll = 0
+    private var mapMarkersTop = mutableListOf<Pair<String, Marker>>()
     override fun onLocationChanged(current : Location?) {
         if (current == null){
             Log.i(TAG, "[onLocationChanged] Location unknown")
         } else {
-            if (mapMarkersWithGeofences.size == 0) {
-                Log.i(TAG, "no geofences to add")
-            } else {
-                // update geofences once every 'geofenceRecalculationDilution' location updates
-                if (currentGeofencePoll % geofenceRecalculationDilution == 0){
-                    updateGeofenceMonitoring(current.getLatitude(), current.getLongitude())
+
+            val currentLocation = Location("currentLocation")
+            currentLocation.latitude = current.latitude
+            currentLocation.longitude = current.longitude
+
+            // ensuring that there exist markers to collect
+            if (mapMarkers.size != 0) {
+
+                // update the 'closeNo' closest points once every 'recalculationDilution' location updates
+                if (currentPoll % recalculationDilution == 0){
+
+                    // sort the map markers by distance to the current position
+                    mapMarkersTop = mapMarkers.toList().sortedWith(
+                            compareBy{
+                                val markerLocation = Location("markerLocation")
+                                markerLocation.latitude = it.second.position.latitude
+                                markerLocation.longitude = it.second.position.longitude
+
+                                currentLocation.distanceTo(markerLocation)}
+                    ).toMutableList()
+
+                    // take only the top 'closeNo' markers for tracking - this avoids the necessity of
+                    // calculating the distance between each marker every frame
+                    mapMarkersTop = mapMarkersTop.subList(0, Math.min(mapMarkersTop.size, closeNo))
                 }
-                currentGeofencePoll = (currentGeofencePoll + 1) % geofenceRecalculationDilution
+                currentPoll = (currentPoll + 1) % recalculationDilution
+
+                // iterate through the list of closest 'closeNo' of markers, checking if the
+                // required distance for marker collection is satisfied
+                val iter = mapMarkersTop.iterator()
+                while (iter.hasNext()) {
+                    val pair = iter.next()
+                    val key = pair.first
+                    val marker = pair.second
+
+                    val markerLocation = Location("markerLocation")
+                    markerLocation.latitude = marker.position.latitude
+                    markerLocation.longitude = marker.position.longitude
+
+                    if (currentLocation.distanceTo(markerLocation) < 25) {
+
+                        collectedWord()
+
+                        // removing marker from google map
+                        mapMarkers[key]!!.remove()
+
+                        // removing marker from closest markers list
+                        iter.remove()
+
+                        // removing marker from hashmap
+                        mapMarkers.remove(key)
+
+                        // removing marker from SQL database
+                        dbPlacemarkHandler.delete(key)
+
+                        // adding word to collected words SQL database
+                        dbCollectedWordsHandler.add(CollectedWord(key))
+                    }
+                }
             }
         }
+    }
+
+    fun collectedWord(){
+        point.imageAlpha = 255
+        val task = Alpha0()
+        val timer = Timer()
+        timer.schedule(task, 500.toLong())
+        (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(500)
+
+        score.text = score()
+    }
+
+    private inner class Alpha0: TimerTask(){
+        override fun run(){
+            runOnUiThread{
+                point.imageAlpha = 0
+            }
+        }
+    }
+
+    fun score() : String {
+        val noOfWords = dbSongHandler.getProp(getCurrentSong(), "noOfWords").toDouble()
+        val collectedWords = dbCollectedWordsHandler.howMany()
+        val score = 3*(10*Math.log10((collectedWords/noOfWords)+0.1)+10)
+        return "%.2f".format(score)
     }
 
     override fun onConnectionFailed(result : ConnectionResult) {
@@ -191,7 +260,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         }
 
         mMap = googleMap
-        // Add a marker and move the camera
         val edin = LatLng(55.9445390, -3.1885250)
         mMap.moveCamera(CameraUpdateFactory.zoomTo(17f))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(edin))
@@ -200,27 +268,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
             mMap.isMyLocationEnabled = true
             mMap.uiSettings.isMyLocationButtonEnabled = true
             mMap.clear()
-            try {
-                val mapMarkerOptions = hashMapOf<String, MarkerOptions>()
-                dbPlacemarkHandler.populateHashMap(mapMarkerOptions)
-                //@todo This is horribly slow, kick to an asynch task ///// also terrible bug when no location, just crashes
-                for (key in mapMarkerOptions.keys){
-                    val marker = mMap.addMarker(mapMarkerOptions[key])
-                    val geofence = Geofence.Builder()
-                            .setRequestId(key)
-                            .setCircularRegion(
-                                    marker.position.latitude,
-                                    marker.position.longitude,
-                                    40f
-                            )
-                            .setExpirationDuration(Geofence.NEVER_EXPIRE)
-                            .setNotificationResponsiveness(0)
-                            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
-                            .build()
-                    mapMarkersWithGeofences[key] = Pair(marker, geofence)
-                }
-            } finally {
-                //@todo
+
+            // adding all the markers to the map
+            val mapMarkerOptions = hashMapOf<String, MarkerOptions>()
+            dbPlacemarkHandler.populateHashMap(mapMarkerOptions)
+            for (key in mapMarkerOptions.keys){
+                val marker = mMap.addMarker(mapMarkerOptions[key])
+                mapMarkers[key] = marker
             }
         } catch (se : SecurityException) {
             Log.e(TAG, "Security exception thrown [onMapReady]")
@@ -230,108 +284,5 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
     fun getCurrentSong(): Int{
         val sharedPref = getSharedPreferences("permInts", Context.MODE_PRIVATE)
         return sharedPref.getInt("currentSong", 0)
-    }
-
-
-    fun updateGeofenceMonitoring(lat: Double, long: Double){
-        try{
-            val geofences = mutableListOf<Geofence>()
-            val mrkrsAndGeofences = mutableListOf<Pair<Marker, Geofence>>()
-
-            for (key in mapMarkersWithGeofences.keys){
-                mrkrsAndGeofences.add(mapMarkersWithGeofences[key]!!)
-            }
-
-            if (mrkrsAndGeofences.size > 50){
-                mrkrsAndGeofences.sortBy { haversine(lat, long, it.first.position.latitude, it.first.position.longitude) }
-                for (x in (0..50)){
-                    geofences.add(mrkrsAndGeofences[x].second)
-                }
-            } else {
-                for (mrkrAndGeofence in mrkrsAndGeofences){
-                    geofences.add(mrkrAndGeofence.second)
-                }
-            }
-
-            if (!mGoogleApiClient.isConnected)  {
-                Log.e(TAG, "api client not connected")
-            } else {
-
-                val geofenceRequest = GeofencingRequest.Builder()
-                        .setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER)
-                        .addGeofences(geofences).build()
-
-                val intent = Intent(this, GeofenceTransitionsIntentService::class.java)
-                val pendingIntent = PendingIntent.getService(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)
-
-                LocationServices.GeofencingApi.removeGeofences(mGoogleApiClient, pendingIntent)
-                LocationServices.GeofencingApi.addGeofences(mGoogleApiClient, geofenceRequest, pendingIntent)
-                        .setResultCallback({ status ->
-                            if (status.isSuccess) {
-                                Log.i(TAG, "Saving Geofence")
-
-                            } else {
-                                Log.e(TAG, "Registering geofence failed: " + status.statusMessage +
-                                        " : " + status.statusCode)
-                            }
-                        })
-            }
-        }
-        catch(e : SecurityException){
-            Log.d(TAG, "Security Exception" + e.message)
-        }
-    }
-
-
-    fun haversine(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val R = 6372.8
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val lat1P = Math.toRadians(lat1)
-        val lat2P = Math.toRadians(lat2)
-
-        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1P) * Math.cos(lat2P)
-        val c = 2 * Math.asin(Math.sqrt(a))
-        return (R * c) * 1000
-    }
-
-    inner class GeofencingReceiver : BroadcastReceiver() {
-        val ACTION_RESP = "com.example.wilko.songle.GEOFENCE_PROCESSED"
-        override fun onReceive(context: Context, intent: Intent) {
-            val nameOfPlacemark = intent.getStringExtra("name")
-
-            if (mapMarkersWithGeofences[nameOfPlacemark] != null){
-                mapMarkersWithGeofences[nameOfPlacemark]!!.first.remove()
-                mapMarkersWithGeofences.remove(nameOfPlacemark)
-                dbPlacemarkHandler.delete(nameOfPlacemark)
-                dbCollectedWordsHandler.add(CollectedWord(nameOfPlacemark))
-                collectedWord()
-            }
-        }
-    }
-
-    fun collectedWord(){
-        point.imageAlpha = 255
-        val task = Alpha0()
-        val timer = Timer()
-        timer.schedule(task, 500.toLong())
-        (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(500)
-
-        score.text = score()
-    }
-
-    private inner class Alpha0: TimerTask(){
-        override fun run(){
-            runOnUiThread{
-                point.imageAlpha = 0
-            }
-        }
-    }
-
-    fun score() : String {
-        val noOfWords = dbSongHandler.getProp(getCurrentSong(), "noOfWords").toDouble()
-        val collectedWords = dbCollectedWordsHandler.howMany()
-        val score = 3*(10*Math.log10((collectedWords/noOfWords)+0.1)+10)
-        return "%.2f".format(score)
     }
 }
