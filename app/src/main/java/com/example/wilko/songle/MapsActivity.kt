@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources
+import android.graphics.Color
 import android.location.Location
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
@@ -11,8 +12,11 @@ import android.os.Vibrator
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.util.Log
+import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
+import android.view.ViewGroup
+import com.github.jinatonic.confetti.CommonConfetti
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
 import com.google.android.gms.location.*
@@ -23,6 +27,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import kotlinx.android.synthetic.main.activity_maps.*
+import org.jetbrains.anko.defaultSharedPreferences
 import java.util.*
 
 
@@ -32,11 +37,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
     private lateinit var mMap: GoogleMap
     private lateinit var mGoogleApiClient: GoogleApiClient
     private val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
-    private lateinit var mLastLocation : Location
-    private val dbCollectedWordsHandler = MyCollectedWordsDBHandler(this)
-    private val dbPlacemarkHandler = MyPlacemarkDBHandler(this)
-    private val dbSongHandler = MySongDBHandler(this)
+    private var mLastLocation : Location? = null
+    private val dbCollectedWordsHandler = DBCollectedWords(this)
+    private val dbPlacemarkHandler = DBPlacemarks(this)
+    private val dbSongHandler = DBSongs(this)
     private val mapMarkers = hashMapOf<String, Marker>()
+    private var vibration : Boolean = true
 
     private val TAG = "MapsActivity"
 
@@ -77,6 +83,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         if (getCurrentSong() != 0){
             score.text = score()
         }
+        val sharedPref = baseContext.defaultSharedPreferences
+        vibration = sharedPref.getBoolean("vibration", true)
     }
 
     override fun onStart() {
@@ -131,11 +139,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         }
     }
 
+    // when a user grants location permissions, the function calls requiring them get repeated
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        when (requestCode) {
+            PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION -> {
+                if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    onConnected(null)
+                    onMapReady(mMap)
+                }
+            }
+            else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        }
+    }
+
     private val recalculationDilution = 5
     private val closeNo = 50
     private var currentPoll = 0
     private var mapMarkersTop = mutableListOf<Pair<String, Marker>>()
     override fun onLocationChanged(current : Location?) {
+        // to avoid having to compare the distance to every marker on each call, this method creates
+        // a list of the closest markers (sparsely updated), and checks only the distances within it
         if (current == null){
             Log.i(TAG, "[onLocationChanged] Location unknown")
         } else {
@@ -180,8 +203,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
 
                     if (currentLocation.distanceTo(markerLocation) < 25) {
 
-                        collectedWord()
-
                         // removing marker from google map
                         mapMarkers[key]!!.remove()
 
@@ -196,6 +217,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
 
                         // adding word to collected words SQL database
                         dbCollectedWordsHandler.add(CollectedWord(key))
+
+                        collectedWord()
                     }
                 }
             }
@@ -207,7 +230,18 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         val task = Alpha0()
         val timer = Timer()
         timer.schedule(task, 500.toLong())
-        (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(500)
+
+        if (vibration){
+            (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(500)
+        }
+
+        val container = point.parent as ViewGroup
+        val pointX = point.left + point.width/2
+        val pointY = point.top + point.height/2
+        CommonConfetti.explosion(container, pointX, pointY,
+                intArrayOf(getColor(R.color.colorPrimary),
+                           getColor(R.color.colorPrimaryDark),
+                           getColor(R.color.colorAccent))).oneShot()
 
         score.text = score()
     }

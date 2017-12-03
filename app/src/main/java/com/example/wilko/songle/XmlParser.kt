@@ -1,24 +1,18 @@
 package com.example.wilko.songle
 
-import android.util.Xml
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
-import java.io.InputStream
 
 /**
  * Created by wilko on 10/13/2017.
+ *
+ * Parent class for xml parsing, it will be inherited from by the domain specific ones
+ *
  */
-
 
 abstract class XmlParser {
     private val ns: String? = null
-
-//    @Throws(XmlPullParserException::class, IOException::class)
-//    fun readPropandAttribute(parser: XmlPullParser, name: String): Pair<String, String> {
-//        parser.require(XmlPullParser.START_TAG, ns, name)
-//        val att = parser.getAttributeValue(null, "lol")
-//    }
 
     @Throws(XmlPullParserException::class, IOException::class)
     fun readProp(parser: XmlPullParser, name: String): String {

@@ -19,22 +19,46 @@ import java.lang.ref.WeakReference
 import java.util.*
 import android.graphics.PorterDuff
 import android.os.Vibrator
+import android.preference.PreferenceManager
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.async
 import org.jetbrains.anko.coroutines.experimental.bg
+import android.widget.ProgressBar
+import com.github.jinatonic.confetti.CommonConfetti
+import com.github.ybq.android.spinkit.style.*
+import android.preference.PreferenceActivity
+import org.jetbrains.anko.defaultSharedPreferences
+import android.view.MenuInflater
 
+
+
+
+/**
+ * Shared preferences flags to indicate whether the downloadable data has been cached,
+ * or whether a new game should be started are used throughout this class.
+ *
+ * Cached has multiple states indicating download stages (as they have to be done in sequence).
+ *  *disclaimer: even though it is named cached, the downloaded files are kept in persistent storage
+ *
+ * NewGame has 2 stages, indicating whether a new game should be started.
+ *  *disclaimer: it is not used on the initial app launch, as seeing that the files are not cached
+ *               is enough of a condition to start a new game
+ */
 
 class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
 
     private val receiver = NetworkReceiver()
-    private val dbSongHandler = MySongDBHandler(this)
-    private val dbPlacemarkHandler = MyPlacemarkDBHandler(this)
-    private val dbCollectedWordsHandler = MyCollectedWordsDBHandler(this)
+    private val dbSongHandler = DBSongs(this)
+    private val dbPlacemarkHandler = DBPlacemarks(this)
+    private val dbCollectedWordsHandler = DBCollectedWords(this)
     private lateinit var myRenderer : MyRenderer
     private lateinit var titleStr : String
+    private lateinit var progressBar : ProgressBar
+    private lateinit var toolMenu : Menu
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        PreferenceManager.setDefaultValues(this, R.xml.pref_general, false)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
@@ -66,6 +90,13 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
             }
         }
         continueTxt()
+
+
+        // setting up progressBar
+        val rotatingPlane = WanderingCubes()
+        progressBar = (spin_kit as ProgressBar)
+        progressBar.indeterminateDrawable = rotatingPlane
+        progressBar.visibility = View.GONE
     }
 
     override fun onDestroy() {
@@ -111,6 +142,34 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         return "%.2f".format(score)
     }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        return when(item.itemId) {
+            R.id.action_settings -> {
+                if (getIntInfo("cached") == 5) {
+                    val intent = Intent(this, SettingsActivity::class.java)
+                    // opening settings fragment directly, bypassing headers, as there is only one
+                    intent.putExtra( PreferenceActivity.EXTRA_SHOW_FRAGMENT,
+                            SettingsActivity.GeneralPreferenceFragment::class.java.name )
+                    intent.putExtra( PreferenceActivity.EXTRA_NO_HEADERS, true )
+                    startActivityForResult(intent, 2)
+                    true
+                } else {
+                    mainTextLog.text = getString(R.string.downloading_interrupted)
+                    false
+                }
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
+        toolMenu = menu //need reference to menu for disabling it during win/loose animation
+        return super.onPrepareOptionsMenu(menu)
+    }
+
     fun saveIntInfo(key: String, int: Int){
         val sharedPref = getSharedPreferences("permInts", Context.MODE_PRIVATE)
         val editor = sharedPref.edit()
@@ -133,8 +192,10 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     // variable representing which pose the hand is currently in
     private var state = 0
     fun handRoll(won: Boolean){
+        // block input during animation
         mapButton.isEnabled = false
         checkProgressButton.isEnabled = false
+        toolMenu.getItem(0).isEnabled = false
 
         val x : Int
         if (won) {
@@ -166,13 +227,23 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         override fun run(){
             runOnUiThread{
                 mainTextLog.text = titleStr
-                (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(500)
+
+                val sharedPref = baseContext.defaultSharedPreferences
+                val vibration = sharedPref.getBoolean("vibration", true)
+                if (vibration){
+                    (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(500)
+                }
+
                 if (won){
                     playVideo()
                     score.text = score(won)
+                    CommonConfetti.rainingConfetti(window.decorView.rootView as ViewGroup,
+                            intArrayOf(Color.YELLOW)).oneShot()
                 }
+                // unblock input after animation
                 mapButton.isEnabled = true
                 checkProgressButton.isEnabled = true
+                toolMenu.getItem(0).isEnabled = true
             }
         }
     }
@@ -211,29 +282,19 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         return true
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        return when(item.itemId) {
-            R.id.action_settings -> {
-                val intent = Intent(this, SettingsActivity::class.java)
-                startActivity(intent)
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == 1){
-            // update the displayed score when returning from Map or Progress
+        if (requestCode == 1){ // returning from Map or Progress
+            // update the displayed score
             score.text = score()
             if(resultCode == Activity.RESULT_OK && data != null){
+
                 val songNo = data.getIntExtra("songNo", 0)
                 val didUpgrade = data.getBooleanExtra("upgrade", false)
                 val didReset = data.getBooleanExtra("reset", false)
+
+                // since starting map or progress activities need the same requestCodes (as progress
+                // may be opened from the map), the control flow is altered based on returned data:
                 if (songNo != 0) {
                     mainTextLog.text = getString(R.string.how_did_you_do)
                     if (songNo == getIntInfo("currentSong")){
@@ -253,26 +314,30 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
             } else {
                 mainTextLog.text = getString(R.string.continue_playing)
             }
+        } else if (requestCode == 2) { // returning from settings - updating preferences
+            myRenderer.changeProfanity(WeakReference<Context>(applicationContext))
         }
     }
 
     fun startNewGame() {
         saveIntInfo("newGame", 1)
+        progressBar.visibility = View.VISIBLE
+        score.text =  getString(R.string.soon)
         mainTextLog.text = getString(R.string.downloading_xml)
-        DownloadXmlTaskSong(NetworkReceiver(), WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
+        DownloadSongXml(NetworkReceiver(), WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
     }
 
     private inner class NetworkReceiver : BroadcastReceiver(), AsyncCompleteListener<Pair<DownloadType, List<Song>>> {
         override fun onReceive(context: Context, intent: Intent) {
+            // triggered if the required data is not already cached - on the initial app launch
+            if (getIntInfo("cached") != 5){
 
-            val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val networkInfo = connMgr.activeNetworkInfo
-            if (networkInfo != null) {
-                if (getIntInfo("cached") != 5){
+                val connMgr = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                val networkInfo = connMgr.activeNetworkInfo
+
+                if (networkInfo != null) {
                     startNewGame()
-                }
-            } else {
-                if (getIntInfo("cached") != 5){
+                } else {
                     mainTextLog.text = getString(R.string.no_internet)
                 }
             }
@@ -281,6 +346,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         override fun asyncComplete(result: Pair<DownloadType, List<Song>>?){
             // stage the downloads, keeping flags to indicate levels of completion
             if (result != null){
+                // the results contain an enum indicating the staging
                 if (result.first == DownloadType.SONGS) {
                     mainTextLog.text = getString(R.string.downloading_pngs)
                     dbSongHandler.deleteAll()
@@ -292,14 +358,13 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                     chooseSong()
                 } else if (result.first == DownloadType.IMG && getIntInfo("cached") == 1) {
                     mainTextLog.text = getString(R.string.downloading_kmls)
-                    DownloadKmlTaskLayers(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
+                    DownloadKmls(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
                     saveIntInfo("cached", 2)
                 } else if (result.first == DownloadType.KLMS && getIntInfo("cached") == 2) {
                     mainTextLog.text = getString(R.string.downloading_lyrics)
                     DownloadLyrics(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
                     saveIntInfo("cached", 3)
                 } else if (result.first == DownloadType.LYRIC && getIntInfo("cached") == 3) {
-                    mainTextLog.text = getString(R.string.downloading_complete)
                     chooseSong()
                     saveIntInfo("cached", 4)
                 } else {
@@ -307,7 +372,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                     // has been preserved, but later staging has failed - just restart the download
                     mainTextLog.text = getString(R.string.downloading_xml)
                     saveStrInfo("timestamp", "reset")
-                    DownloadXmlTaskSong(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
+                    DownloadSongXml(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
                 }
             } else {
                 if (getIntInfo("cached") == 5){
@@ -337,7 +402,12 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         // resetting the collected words database
         dbCollectedWordsHandler.deleteAll()
 
-        mainTextLog.text = getIntInfo("currentSong").toString()
+        mainTextLog.text = getString(R.string.new_game)
+        progressBar.visibility = View.GONE
+
+        // cheat, to display the number of the chosen song
+        //mainTextLog.text = getIntInfo("currentSong").toString()
+
         showDifficultyDialog()
     }
 

@@ -19,7 +19,7 @@ class KmlParser : XmlParser() {
     @Throws(XmlPullParserException::class, IOException::class)
     fun parse(input : InputStream, context: Context): List<Placemark> {
         input.use {
-            val dbCollectedWordsHandler = MyCollectedWordsDBHandler(context)
+            val dbCollectedWordsHandler = DBCollectedWords(context)
             dbCollectedWordsHandler.populateHashMap(collectedWords)
 
             val parser = Xml.newPullParser()
@@ -37,7 +37,7 @@ class KmlParser : XmlParser() {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            // Starts by looking for the song tag
+            // Starts by looking for the Document tag
             if (parser.name == "Document") {
                 return readDocument(parser)
             } else {
@@ -55,10 +55,9 @@ class KmlParser : XmlParser() {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            // Starts by looking for the placemark tag
             if (parser.name == "Placemark") {
                 val placemark = readPlacemark(parser)
-                // add placemark only if not collected yet (prior to changing difficulty)
+                // add placemark only if not collected yet (in case of difficulty change)
                 if (placemark.name !in collectedWords.keys){
                     entries.add(placemark)
                 }
@@ -98,7 +97,6 @@ class KmlParser : XmlParser() {
             if (parser.eventType != XmlPullParser.START_TAG) {
                 continue
             }
-            // Starts by looking for the song tag
             if (parser.name == "coordinates") {
                 parser.require(XmlPullParser.START_TAG, ns, "coordinates")
                 val coor = readText(parser)

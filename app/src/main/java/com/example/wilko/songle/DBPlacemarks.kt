@@ -10,12 +10,17 @@ import com.google.android.gms.maps.model.MarkerOptions
 
 /**
  * Created by wilko on 10/28/2017.
+ *
+ * A SQLite database handler for saving a list of map markers.
+ *
+ * credits to Bucky Roberts, whose YouTube tutorial guide was followed in the creation of this class
+ * https://www.youtube.com/watch?v=Jcmp09LkU-I
  */
 
-class MyPlacemarkDBHandler(context: Context) : SQLiteOpenHelper(context, "placemarks.db", null, 1) {
+class DBPlacemarks(context: Context) : SQLiteOpenHelper(context, "placemarks.db", null, 1) {
 
     private val TABLE_PLACEMARKS = "placemarks"
-    private val COLUMN_NAME = "name"
+    private val COLUMN_NAME = "name" // name is the line and word number in this format %:%
     private val COLUMN_DESCRIPTION = "description"
     private val COLUMN_STYLE ="styleUrl"
     private val COLUMN_LAT ="lat"
@@ -76,12 +81,14 @@ class MyPlacemarkDBHandler(context: Context) : SQLiteOpenHelper(context, "placem
 
         while (!c.isAfterLast){
 
+            // construct marker options, so it is easy to add them to the map in the map activity
             val mrkr = MarkerOptions()
                     .title(c.getString(c.getColumnIndex(COLUMN_NAME)))
                     .snippet(c.getString(c.getColumnIndex(COLUMN_DESCRIPTION)))
                     .position(LatLng(c.getDouble(c.getColumnIndex(COLUMN_LAT)),
                             c.getDouble(c.getColumnIndex(COLUMN_LONG))))
 
+            // choose the appropriate png icon for the style of the marker
             when(c.getString(c.getColumnIndex(COLUMN_STYLE))){
                 "#unclassified" -> mrkr.icon(BitmapDescriptorFactory.fromFile("wht_blank.png"))
                 "#boring" -> mrkr.icon(BitmapDescriptorFactory.fromFile("ylw_blank.png"))

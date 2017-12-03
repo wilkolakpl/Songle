@@ -11,6 +11,8 @@ import java.net.URL
 
 /**
  * Created by wilko on 10/13/2017.
+ *
+ * Parent class for all of the downloads, it will be inherited from by all the domain specific ones
  */
 
 abstract class DownloadTask<E>(private val caller : AsyncCompleteListener<E>) :
@@ -24,7 +26,6 @@ abstract class DownloadTask<E>(private val caller : AsyncCompleteListener<E>) :
             Log.e(TAG, "IOException")
             null
         } catch (e: XmlPullParserException) {
-            //"Error parsing XML"//@todo
             Log.e(TAG, "Error Parsing")
             null
         }

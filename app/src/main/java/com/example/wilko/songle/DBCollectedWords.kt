@@ -7,12 +7,17 @@ import android.database.sqlite.SQLiteOpenHelper
 
 /**
  * Created by wilko on 11/11/2017.
+ *
+ * A SQLite database handler for saving a list of collected words.
+ *
+ * credits to Bucky Roberts, whose YouTube tutorial guide was followed in the creation of this class
+ * https://www.youtube.com/watch?v=Jcmp09LkU-I
  */
 
-class MyCollectedWordsDBHandler(context: Context) : SQLiteOpenHelper(context, "collectedWords.db", null, 1) {
+class DBCollectedWords(context: Context) : SQLiteOpenHelper(context, "collectedWords.db", null, 1) {
 
     private val TABLE_COLLECTED = "collected"
-    private val COLUMN_NAME = "name"
+    private val COLUMN_NAME = "name" // name is the line and word number in this format %:%
 
     override fun onCreate(db: SQLiteDatabase?) {
         val query = "CREATE TABLE IF NOT EXISTS " + TABLE_COLLECTED + "(" +

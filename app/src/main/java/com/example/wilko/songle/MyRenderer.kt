@@ -4,11 +4,18 @@ import android.content.Context
 import android.opengl.GLSurfaceView
 import android.opengl.GLU
 import android.os.SystemClock
+import org.jetbrains.anko.defaultSharedPreferences
+import java.lang.ref.WeakReference
 import javax.microedition.khronos.opengles.GL10
 import javax.microedition.khronos.egl.EGLConfig
 
 /**
  * Created by wilko on 10/2/2017.
+ *
+ * A open GL renderer.
+ *
+ * credits to Bucky Roberts, whose YouTube tutorial guide was followed in the creation of this class
+ * https://www.youtube.com/watch?v=u58DwKPzBoY
  */
 
 class MyRenderer(context : Context) : GLSurfaceView.Renderer {
@@ -17,9 +24,13 @@ class MyRenderer(context : Context) : GLSurfaceView.Renderer {
     private var stateFlag = 0
 
     private var modelCube: ModelCube = ModelCube()
-    private var hand: ModelObject3D = ModelObject3D(context, R.raw.hand)
-    private var handfu: ModelObject3D = ModelObject3D(context, R.raw.handfu)
-    private var handye: ModelObject3D = ModelObject3D(context, R.raw.handye)
+    private var hand: ModelHand = ModelHand(context, R.raw.hand)
+    private var handye: ModelHand = ModelHand(context, R.raw.handye)
+    private lateinit var handfu: ModelHand
+
+    init { // set the correct model, with or w/o profanity
+        changeProfanity(WeakReference<Context>(context))
+    }
 
     override fun onSurfaceCreated(gl: GL10, eglConfig: EGLConfig){
         gl.glDisable(GL10.GL_DITHER)
@@ -46,6 +57,7 @@ class MyRenderer(context : Context) : GLSurfaceView.Renderer {
 
         gl.glRotatef(angle,0F,1F,0F)
 
+        // choosing to display one of the 3 hand models
         if (stateFlag == 0){
             hand.draw(gl)
         } else if (stateFlag == 1){
@@ -66,5 +78,19 @@ class MyRenderer(context : Context) : GLSurfaceView.Renderer {
 
     fun changeStateFlag(newState : Int){
         stateFlag = newState
+    }
+
+    fun changeProfanity(wContext : WeakReference<Context>){
+        // set the correct model, with or w/o profanity
+        val context = wContext.get()
+        if (context != null){
+            val sharedPref = context.defaultSharedPreferences
+            val profanity = sharedPref.getBoolean("profanity", true)
+            if (profanity){
+                handfu = ModelHand(context, R.raw.handfu)
+            } else {
+                handfu = ModelHand(context, R.raw.handfu2)
+            }
+        }
     }
 }

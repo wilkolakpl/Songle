@@ -1,11 +1,8 @@
 package com.example.wilko.songle
 
 import android.app.Activity
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
-import android.net.ConnectivityManager
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -13,12 +10,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.TextView
-import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_song_selection.*
+
+/**
+ *
+ * A ListView container activity.
+ *
+ * credits to Brian Voong, whose YouTube tutorial guide was followed in the creation of this class
+ * https://www.youtube.com/watch?v=EwwdQt3_fFU
+ */
 
 class SongSelectionActivity : AppCompatActivity() {
 
-    private val dbHandler = MySongDBHandler(this)
+    private val dbHandler = DBSongs(this)
     private var songs = mutableListOf<Song>()
 
     private val adapter = MyAdapter(this)
@@ -32,7 +36,6 @@ class SongSelectionActivity : AppCompatActivity() {
         songList.adapter = adapter
         songList.isClickable = true
         songList.setOnItemClickListener { _, _, position, _ ->
-            //Toast.makeText(this, "Song Selected:"+" "+songs[position].title,Toast.LENGTH_SHORT).show()
             val returnIntent = Intent()
             returnIntent.putExtra("songNo", songs[position].number)
             setResult(Activity.RESULT_OK, returnIntent)
@@ -42,11 +45,7 @@ class SongSelectionActivity : AppCompatActivity() {
 
     private inner class MyAdapter(context : Context): BaseAdapter() {
 
-        private var mContext: Context
-
-        init {
-            mContext = context
-        }
+        private var mContext = context
 
         override fun getCount(): Int {
             return songs.size
@@ -61,17 +60,27 @@ class SongSelectionActivity : AppCompatActivity() {
         }
 
         override fun getView(position : Int, convertView : View?, viewGroup: ViewGroup?): View {
-            val layoutInflater = LayoutInflater.from(mContext)
+            var row = convertView
+            // making use of the ViewHolder class, to prevent calling findViewById every time
+            // a list item appears on screen
+            val viewHolder : ViewHolder
+            if (convertView == null) {
+                val layoutInflater = LayoutInflater.from(mContext)
+                row = layoutInflater.inflate(R.layout.row_song_selection, viewGroup, false)
+                viewHolder = ViewHolder(row)
+                row.tag = viewHolder
+            } else {
+                viewHolder = convertView.tag as ViewHolder
+            }
 
-            val rowMain = layoutInflater.inflate(R.layout.row_main, viewGroup, false)
+            viewHolder.songTitle.text = songs[position].title
+            viewHolder.artistName.text = songs[position].artist
+            return row!!
+        }
 
-            val songTitle = rowMain.findViewById<TextView>(R.id.songTitle)
-            songTitle.text = songs[position].title
-
-            val artistName = rowMain.findViewById<TextView>(R.id.artistName)
-            artistName.text = songs[position].artist
-
-            return rowMain
+        private inner class ViewHolder(view: View) {
+            var songTitle = view.findViewById<TextView>(R.id.songTitle)
+            var artistName = view.findViewById<TextView>(R.id.artistName)
         }
     }
 }

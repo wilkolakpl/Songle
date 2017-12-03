@@ -37,25 +37,58 @@
         android:id="@+id/include"
         layout="@layout/content_check_progress" />
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/resetButton"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/fab_margin"
-        android:scaleType="center"
         app:layout_anchor="@+id/app_bar"
-        app:layout_anchorGravity="left|center"
-        app:srcCompat="@drawable/ic_whiteflag" />
+        app:layout_anchorGravity="right|center">
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/upgradeButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/fab_margin"
-        android:scaleType="center"
-        app:layout_anchor="@+id/app_bar"
-        app:layout_anchorGravity="right|center"
-        app:srcCompat="@drawable/ic_mapupgrade" />
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center" >
+
+            <TextView
+                android:id="@+id/resetButtonDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:text="@string/give_up"/>
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/resetButton"
+                android:layout_below="@id/resetButtonDescription"
+                android:layout_centerInParent="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:scaleType="center"
+                app:srcCompat="@drawable/ic_whiteflag" />
+        </RelativeLayout>
+        <RelativeLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:gravity="center" >
+
+            <TextView
+                android:id="@+id/upgradeButtonDescription"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:text="@string/upgrade"/>
+
+            <android.support.design.widget.FloatingActionButton
+                android:id="@+id/upgradeButton"
+                android:layout_below="@id/upgradeButtonDescription"
+                android:layout_centerInParent="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:scaleType="center"
+                app:srcCompat="@drawable/ic_mapupgrade" />
+        </RelativeLayout>
+    </LinearLayout>
+
 
     <ImageButton
         android:background="?android:selectableItemBackground"

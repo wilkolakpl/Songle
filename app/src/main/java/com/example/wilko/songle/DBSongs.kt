@@ -7,9 +7,14 @@ import android.database.sqlite.SQLiteOpenHelper
 
 /**
  * Created by wilko on 10/22/2017.
+ *
+ * A SQLite database handler for saving a list of songs.
+ *
+ * credits to Bucky Roberts, whose YouTube tutorial guide was followed in the creation of this class
+ * https://www.youtube.com/watch?v=Jcmp09LkU-I
  */
 
-class MySongDBHandler(context: Context) : SQLiteOpenHelper(context, "songs.db", null, 1) {
+class DBSongs(context: Context) : SQLiteOpenHelper(context, "songs.db", null, 1) {
 
     private val TABLE_SONGS = "songs"
     private val COLUMN_NUMBER = "number"
@@ -48,24 +53,6 @@ class MySongDBHandler(context: Context) : SQLiteOpenHelper(context, "songs.db", 
             db.execSQL("DROP_TABLE_IF_EXISTS " + TABLE_SONGS)
             onCreate(db)
         }
-    }
-
-    fun addSong(song : Song){
-        val values = ContentValues()
-        values.put(COLUMN_NUMBER, song.number)
-        values.put(COLUMN_ARTIST, song.artist)
-        values.put(COLUMN_TITLE, song.title)
-        values.put(COLUMN_LINK, song.link)
-        values.put(COLUMN_LYRIC, song.lyric)
-        values.put(COLUMN_NOOFWORDS, song.noOfWords)
-        values.put(COLUMN_KMLLOCATION1, song.kmlLocation1)
-        values.put(COLUMN_KMLLOCATION2, song.kmlLocation2)
-        values.put(COLUMN_KMLLOCATION3, song.kmlLocation3)
-        values.put(COLUMN_KMLLOCATION4, song.kmlLocation4)
-        values.put(COLUMN_KMLLOCATION5, song.kmlLocation5)
-        val db = writableDatabase
-        db.insert(TABLE_SONGS, null, values)
-        db.close()
     }
 
     fun addAll(list : List<Song>){

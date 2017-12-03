@@ -8,6 +8,11 @@ import javax.microedition.khronos.opengles.GL10
 
 /**
  * Created by wilko on 10/2/2017.
+ *
+ * A hard-coded 3D open GL cube, with a purple gradient on it.
+ *
+ * credits to Bucky Roberts, whose YouTube tutorial guide was followed in the creation of this class
+ * https://www.youtube.com/watch?v=u58DwKPzBoY
  */
 
 class ModelCube {
@@ -21,7 +26,8 @@ class ModelCube {
             -2F,-7F,2F,
             -2F,-5F,2F)
 
-    private var indexes: ShortArray = shortArrayOf(3,4,0,0,4,1,3,0,1,3,7,4,7,6,4,7,3,6,3,1,2,1,6,2,6,3,2,1,4,5,5,6,1,6,5,4)
+    private var indexes: ShortArray = shortArrayOf(3,4,0,0,4,1,3,0,1,3,7,4,7,6,4,7,3,6,
+                                                   3,1,2,1,6,2,6,3,2,1,4,5,5,6,1,6,5,4)
 
     private var colors: FloatArray = floatArrayOf(
             1F,1F,1F,1F,

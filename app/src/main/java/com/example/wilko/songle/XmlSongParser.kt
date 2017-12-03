@@ -30,9 +30,11 @@ class XmlSongParser : XmlParser() {
         val entries = ArrayList<Song>()
         parser.require(XmlPullParser.START_TAG, ns, "Songs")
 
+        // compares the timestamp of the stored xml with the one on the server
         val prevTimestamp = getInfo("timestamp", context)
         val currTimestamp = parser.getAttributeValue(null, "timestamp")
         if (prevTimestamp == currTimestamp) {
+            // if they are the same, the parsing ends here, and an empty list is returned
             return entries
         }
         saveInfo("timestamp", currTimestamp, context)
@@ -77,6 +79,7 @@ class XmlSongParser : XmlParser() {
                 "Number" -> number = readProp(parser, parser.name)
                 "Artist" -> artist = readProp(parser, parser.name)
                 "Title" -> title = readProp(parser, parser.name)
+                // formatting the link to be read by a YouTubePlayer
                 "Link" -> link = readProp(parser, parser.name).split("/").last()
                 else -> skip(parser)
             }

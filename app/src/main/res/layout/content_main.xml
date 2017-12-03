@@ -99,4 +99,16 @@
         app:layout_constraintHorizontal_bias="0.501"
         app:layout_constraintStart_toStartOf="parent" />
 
+    <com.github.ybq.android.spinkit.SpinKitView xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/spin_kit"
+        style="@style/SpinKitView.WanderingCubes"
+        android:layout_width="150dp"
+        android:layout_height="147dp"
+        android:layout_gravity="center"
+        app:SpinKit_Color="@color/colorPrimary"
+        app:layout_constraintBottom_toBottomOf="@+id/surfaceView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/surfaceView" />
+
 </android.support.constraint.ConstraintLayout>

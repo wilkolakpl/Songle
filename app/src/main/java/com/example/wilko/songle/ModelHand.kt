@@ -11,9 +11,14 @@ import javax.microedition.khronos.opengles.GL10
 
 /**
  * Created by wilko on 10/2/2017.
+ *
+ * A 3D hand open GL model.
+ *
+ * credits to Karl (ThinMatrix), whose YouTube tutorial guide was followed
+ * in the creation of this class: https://www.youtube.com/watch?v=YKFYtekgnP8
  */
 
-class ModelObject3D(private val context : Context, private val id : Int) {
+class ModelHand(private val context : Context, private val id : Int) {
     lateinit private var vertices : FloatArray
     lateinit private var indices : ShortArray
     private var vBuff : ByteBuffer
@@ -39,20 +44,16 @@ class ModelObject3D(private val context : Context, private val id : Int) {
     }
 
     fun draw(gl: GL10){
-        //gl.glFrontFace(GL10.GL_CW)
-        //gl.glEnable(GL10.GL_CULL_FACE)
-        //gl.glCullFace(GL10.GL_BACK)
         gl.glEnableClientState(GL10.GL_VERTEX_ARRAY)
         gl.glVertexPointer(3, GL10.GL_FLOAT, 0, vFloatBuff)
         gl.glDrawElements(GL10.GL_TRIANGLES, indices.size, GL10.GL_UNSIGNED_SHORT, iShortBuff)
         gl.glDisableClientState(GL10.GL_VERTEX_ARRAY)
-        //gl.glDisable(GL10.GL_CULL_FACE)
     }
 
     fun loadMesh(){
-
-        var verticesList = ArrayList<Float>()
-        val indecesList = ArrayList<Int>()
+        // populating vertices and indices from an obj file
+        val verticesList = ArrayList<Float>()
+        val indicesList = ArrayList<Int>()
 
         try {
             val fileInputStream = context.resources.openRawResource(id)
@@ -81,17 +82,18 @@ class ModelObject3D(private val context : Context, private val id : Int) {
                     if (tokens.size == 4){
                         for (i in tokens.indices){
                             if (i == 0) continue
-                            indecesList.add(tokens[i].split("/").first().toShort() - 1)
+                            indicesList.add(tokens[i].split("/").first().toShort() - 1)
+                            // -1 is necessary as our renderer takes zero indexed vertices
                         }
                     }
                     else if (tokens.size == 5){ //case face is a square
                         for (i in tokens.indices){
                             if ((i == 0) or (i == 2)) continue //forming one triangle
-                            indecesList.add(tokens[i].split("/").first().toShort() - 1)
+                            indicesList.add(tokens[i].split("/").first().toShort() - 1)
                         }
                         for (i in tokens.indices){
                             if ((i == 0) or (i == 4)) continue //and another
-                            indecesList.add(tokens[i].split("/").first().toShort() - 1)
+                            indicesList.add(tokens[i].split("/").first().toShort() - 1)
                         }
                     }
 
@@ -105,12 +107,12 @@ class ModelObject3D(private val context : Context, private val id : Int) {
         }
         catch (e : Exception){
             e.printStackTrace()
-            //exitProcess(1)//@todo
         }
 
-        indices = ShortArray(indecesList.size)
+        //initialize and populate the indices and vertices arrays
+        indices = ShortArray(indicesList.size)
         for (i in indices.indices) {
-            indices.set(i, indecesList[i].toShort())
+            indices.set(i, indicesList[i].toShort())
         }
 
         vertices = FloatArray(verticesList.size)
