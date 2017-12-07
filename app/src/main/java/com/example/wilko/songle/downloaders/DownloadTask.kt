@@ -1,8 +1,9 @@
-package com.example.wilko.songle
+package com.example.wilko.songle.downloaders
 
 import android.content.Context
 import android.os.AsyncTask
 import android.util.Log
+import com.example.wilko.songle.utils.AsyncCompleteListener
 import org.apache.commons.io.FileUtils
 import org.xmlpull.v1.XmlPullParserException
 import java.io.*
@@ -19,9 +20,9 @@ abstract class DownloadTask<E>(private val caller : AsyncCompleteListener<E>) :
         AsyncTask<String, Void, E?>() {
 
     val TAG = "DownloadTask"
-    override fun doInBackground(vararg urls: String): E? {
+    override fun doInBackground(vararg vararg: String): E? {
         return try {
-            loadFromNetwork(urls[0])
+            loadFromNetwork()
         } catch (e: IOException) {
             Log.e(TAG, "IOException")
             null
@@ -31,7 +32,7 @@ abstract class DownloadTask<E>(private val caller : AsyncCompleteListener<E>) :
         }
     }
 
-    abstract fun loadFromNetwork(urlString: String): E
+    abstract fun loadFromNetwork(): E
 
     @Throws(IOException::class)
     fun downloadUrl(urlString: String): InputStream {

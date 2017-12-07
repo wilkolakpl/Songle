@@ -1,7 +1,9 @@
-package com.example.wilko.songle
+package com.example.wilko.songle.parsers
 
 import android.content.Context
 import android.util.Xml
+import com.example.wilko.songle.dataClasses.Placemark
+import com.example.wilko.songle.databaseHelpers.DBCollectedWords
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException
@@ -19,7 +21,7 @@ class KmlParser : XmlParser() {
     @Throws(XmlPullParserException::class, IOException::class)
     fun parse(input : InputStream, context: Context): List<Placemark> {
         input.use {
-            val dbCollectedWordsHandler = DBCollectedWords(context)
+            val dbCollectedWordsHandler = DBCollectedWords
             dbCollectedWordsHandler.populateHashMap(collectedWords)
 
             val parser = Xml.newPullParser()

@@ -27,10 +27,19 @@ import android.widget.ProgressBar
 import com.github.jinatonic.confetti.CommonConfetti
 import com.github.ybq.android.spinkit.style.*
 import android.preference.PreferenceActivity
+import android.util.Log
 import org.jetbrains.anko.defaultSharedPreferences
-import android.view.MenuInflater
-
-
+import com.example.wilko.songle.dataClasses.Song
+import com.example.wilko.songle.databaseHelpers.DBCollectedWords
+import com.example.wilko.songle.databaseHelpers.DBPlacemarks
+import com.example.wilko.songle.databaseHelpers.DBSongs
+import com.example.wilko.songle.downloaders.*
+import com.example.wilko.songle.openGL.MyRenderer
+import com.example.wilko.songle.parsers.KmlParser
+import com.example.wilko.songle.utils.AsyncCompleteListener
+import kotlinx.android.synthetic.main.row_song_selection.view.*
+import java.io.IOException
+import java.io.InputStream
 
 
 /**
@@ -47,10 +56,11 @@ import android.view.MenuInflater
 
 class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
 
+    private val TAG = "MainActivity"
     private val receiver = NetworkReceiver()
-    private val dbSongHandler = DBSongs(this)
-    private val dbPlacemarkHandler = DBPlacemarks(this)
-    private val dbCollectedWordsHandler = DBCollectedWords(this)
+    private val dbSongHandler = DBSongs
+    private val dbPlacemarkHandler = DBPlacemarks
+    private val dbCollectedWordsHandler = DBCollectedWords
     private lateinit var myRenderer : MyRenderer
     private lateinit var titleStr : String
     private lateinit var progressBar : ProgressBar
@@ -119,14 +129,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         }
     }
 
-    fun score() : String {
-        val noOfWords = dbSongHandler.getProp(getIntInfo("currentSong"), "noOfWords").toDouble()
-        val collectedWords = dbCollectedWordsHandler.howMany()
-        val score = 3*(10*Math.log10((collectedWords/noOfWords)+0.1)+10)
-        return "%.2f".format(score)
-    }
-
-    fun score(won: Boolean) : String {
+    fun score(won: Boolean = false) : String {
         val noOfWords = dbSongHandler.getProp(getIntInfo("currentSong"), "noOfWords").toDouble()
         val collectedWords = dbCollectedWordsHandler.howMany()
         var score = 3*(10*Math.log10((collectedWords/noOfWords)+0.1)+10)
@@ -315,8 +318,10 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                 mainTextLog.text = getString(R.string.continue_playing)
             }
         } else if (requestCode == 2) { // returning from settings - updating preferences
-            myRenderer.changeProfanity(WeakReference<Context>(applicationContext))
+            myRenderer.changeProfanity()
         }
+        // reset hand to neutral state when returning from a different activity
+        myRenderer.changeStateFlag(0)
     }
 
     fun startNewGame() {
@@ -324,10 +329,10 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         progressBar.visibility = View.VISIBLE
         score.text =  getString(R.string.soon)
         mainTextLog.text = getString(R.string.downloading_xml)
-        DownloadSongXml(NetworkReceiver(), WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
+        DownloadSongXml(NetworkReceiver()).execute()
     }
 
-    private inner class NetworkReceiver : BroadcastReceiver(), AsyncCompleteListener<Pair<DownloadType, List<Song>>> {
+    private inner class NetworkReceiver : BroadcastReceiver(), AsyncCompleteListener<DownloadType> {
         override fun onReceive(context: Context, intent: Intent) {
             // triggered if the required data is not already cached - on the initial app launch
             if (getIntInfo("cached") != 5){
@@ -343,28 +348,25 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
             }
         }
 
-        override fun asyncComplete(result: Pair<DownloadType, List<Song>>?){
+        override fun asyncComplete(result: DownloadType?){
             // stage the downloads, keeping flags to indicate levels of completion
             if (result != null){
                 // the results contain an enum indicating the staging
-                if (result.first == DownloadType.SONGS) {
+                if (result == DownloadType.SONGS) {
                     mainTextLog.text = getString(R.string.downloading_pngs)
-                    dbSongHandler.deleteAll()
-                    dbSongHandler.addAll(result.second)
-                    DownloadPinPngs(this, WeakReference<Context>(applicationContext)).execute("http://maps.google.com/mapfiles/kml/paddle/")
+                    DownloadPinPngs(this).execute()
                     saveIntInfo("cached", 1)
-                } else if (result.first == DownloadType.NO_NEW_SONGS && getIntInfo("cached") == 5) {
-                    mainTextLog.text = getString(R.string.downloading_unnecessary)
+                } else if (result == DownloadType.NO_NEW_SONGS && getIntInfo("cached") == 5) {
                     chooseSong()
-                } else if (result.first == DownloadType.IMG && getIntInfo("cached") == 1) {
+                } else if (result == DownloadType.IMG && getIntInfo("cached") == 1) {
                     mainTextLog.text = getString(R.string.downloading_kmls)
-                    DownloadKmls(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
+                    DownloadKmls(this).execute()
                     saveIntInfo("cached", 2)
-                } else if (result.first == DownloadType.KLMS && getIntInfo("cached") == 2) {
+                } else if (result == DownloadType.KLMS && getIntInfo("cached") == 2) {
                     mainTextLog.text = getString(R.string.downloading_lyrics)
-                    DownloadLyrics(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/")
+                    DownloadLyrics(this).execute()
                     saveIntInfo("cached", 3)
-                } else if (result.first == DownloadType.LYRIC && getIntInfo("cached") == 3) {
+                } else if (result == DownloadType.LYRIC && getIntInfo("cached") == 3) {
                     chooseSong()
                     saveIntInfo("cached", 4)
                 } else {
@@ -372,7 +374,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                     // has been preserved, but later staging has failed - just restart the download
                     mainTextLog.text = getString(R.string.downloading_xml)
                     saveStrInfo("timestamp", "reset")
-                    DownloadSongXml(this, WeakReference<Context>(applicationContext)).execute("http://www.inf.ed.ac.uk/teaching/courses/cslp/data/songs/songs.xml")
+                    DownloadSongXml(this).execute()
                 }
             } else {
                 if (getIntInfo("cached") == 5){
@@ -387,6 +389,8 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     }
 
     fun chooseSong() {
+        mainTextLog.text = getString(R.string.new_game)
+
         // setting 0 for mapNo, indicating that it has not been assigned yet
         saveIntInfo("mapNo", 0)
 
@@ -402,7 +406,6 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         // resetting the collected words database
         dbCollectedWordsHandler.deleteAll()
 
-        mainTextLog.text = getString(R.string.new_game)
         progressBar.visibility = View.GONE
 
         // cheat, to display the number of the chosen song
@@ -474,10 +477,16 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
 
     fun loadKml(mapNo : Int){
         async(UI){
-            dbPlacemarkHandler.deleteAll()
-            val kmlFile = FileInputStream(filesDir.toString() + "/map" + mapNo + "song" + getIntInfo("currentSong") + "cacheKml.kml")
+            val kmlFile : InputStream?
+            try {
+                kmlFile = FileInputStream(filesDir.toString() + "/map" + mapNo + "song" + getIntInfo("currentSong") + "cacheKml.kml")
+            } catch (e : IOException) {
+                Log.e(localClassName, "couldn't load kml from local files")
+                return@async
+            }
             val kmlParser = KmlParser()
             val placemarks = bg{kmlParser.parse(kmlFile, applicationContext)}
+            dbPlacemarkHandler.deleteAll()
             dbPlacemarkHandler.addAll(placemarks.await())
             // the flagging is delayed until the background thread's callback
             if (placemarks.await() != null) {
@@ -485,6 +494,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                 saveIntInfo("cached", 5)
                 saveIntInfo("newGame", 0)
             }
+
         }
     }
 

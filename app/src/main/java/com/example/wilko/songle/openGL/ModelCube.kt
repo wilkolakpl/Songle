@@ -1,4 +1,4 @@
-package com.example.wilko.songle
+package com.example.wilko.songle.openGL
 
 import java.nio.ByteBuffer
 import java.nio.ByteOrder

@@ -1,7 +1,9 @@
-package com.example.wilko.songle
+package com.example.wilko.songle.openGL
 
 import android.content.Context
+import android.util.Log
 import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStreamReader
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -19,6 +21,8 @@ import javax.microedition.khronos.opengles.GL10
  */
 
 class ModelHand(private val context : Context, private val id : Int) {
+    val TAG = "ModelHand"
+
     lateinit private var vertices : FloatArray
     lateinit private var indices : ShortArray
     private var vBuff : ByteBuffer
@@ -105,8 +109,8 @@ class ModelHand(private val context : Context, private val id : Int) {
             fileInputStream.close()
 
         }
-        catch (e : Exception){
-            e.printStackTrace()
+        catch (e : IOException){
+            Log.e(TAG, "couldn't load hand objs from resources")
         }
 
         //initialize and populate the indices and vertices arrays

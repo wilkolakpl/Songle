@@ -10,6 +10,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.TextView
+import com.example.wilko.songle.dataClasses.Song
+import com.example.wilko.songle.databaseHelpers.DBSongs
 import kotlinx.android.synthetic.main.activity_song_selection.*
 
 /**
@@ -22,7 +24,7 @@ import kotlinx.android.synthetic.main.activity_song_selection.*
 
 class SongSelectionActivity : AppCompatActivity() {
 
-    private val dbHandler = DBSongs(this)
+    private val dbHandler = DBSongs
     private var songs = mutableListOf<Song>()
 
     private val adapter = MyAdapter(this)

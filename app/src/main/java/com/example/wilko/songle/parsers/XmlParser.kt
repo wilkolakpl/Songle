@@ -1,4 +1,4 @@
-package com.example.wilko.songle
+package com.example.wilko.songle.parsers
 
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException

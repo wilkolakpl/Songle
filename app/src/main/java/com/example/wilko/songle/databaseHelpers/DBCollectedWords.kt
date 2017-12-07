@@ -1,9 +1,10 @@
-package com.example.wilko.songle
+package com.example.wilko.songle.databaseHelpers
 
 import android.content.ContentValues
-import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.example.wilko.songle.App
+import com.example.wilko.songle.dataClasses.CollectedWord
 
 /**
  * Created by wilko on 11/11/2017.
@@ -14,7 +15,7 @@ import android.database.sqlite.SQLiteOpenHelper
  * https://www.youtube.com/watch?v=Jcmp09LkU-I
  */
 
-class DBCollectedWords(context: Context) : SQLiteOpenHelper(context, "collectedWords.db", null, 1) {
+object DBCollectedWords : SQLiteOpenHelper(App.instance, "collectedWords.db", null, 1) {
 
     private val TABLE_COLLECTED = "collected"
     private val COLUMN_NAME = "name" // name is the line and word number in this format %:%

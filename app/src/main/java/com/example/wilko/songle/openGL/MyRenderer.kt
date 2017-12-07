@@ -1,9 +1,11 @@
-package com.example.wilko.songle
+package com.example.wilko.songle.openGL
 
 import android.content.Context
 import android.opengl.GLSurfaceView
 import android.opengl.GLU
 import android.os.SystemClock
+import com.example.wilko.songle.App
+import com.example.wilko.songle.R
 import org.jetbrains.anko.defaultSharedPreferences
 import java.lang.ref.WeakReference
 import javax.microedition.khronos.opengles.GL10
@@ -29,7 +31,7 @@ class MyRenderer(context : Context) : GLSurfaceView.Renderer {
     private lateinit var handfu: ModelHand
 
     init { // set the correct model, with or w/o profanity
-        changeProfanity(WeakReference<Context>(context))
+        changeProfanity()
     }
 
     override fun onSurfaceCreated(gl: GL10, eglConfig: EGLConfig){
@@ -80,17 +82,14 @@ class MyRenderer(context : Context) : GLSurfaceView.Renderer {
         stateFlag = newState
     }
 
-    fun changeProfanity(wContext : WeakReference<Context>){
+    fun changeProfanity(){
         // set the correct model, with or w/o profanity
-        val context = wContext.get()
-        if (context != null){
-            val sharedPref = context.defaultSharedPreferences
-            val profanity = sharedPref.getBoolean("profanity", true)
-            if (profanity){
-                handfu = ModelHand(context, R.raw.handfu)
-            } else {
-                handfu = ModelHand(context, R.raw.handfu2)
-            }
+        val sharedPref = App.instance.defaultSharedPreferences
+        val profanity = sharedPref.getBoolean("profanity", true)
+        if (profanity){
+            handfu = ModelHand(App.instance, R.raw.handfu)
+        } else {
+            handfu = ModelHand(App.instance, R.raw.handfu2)
         }
     }
 }

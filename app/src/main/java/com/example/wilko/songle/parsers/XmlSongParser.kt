@@ -1,7 +1,8 @@
-package com.example.wilko.songle
+package com.example.wilko.songle.parsers
 
 import android.content.Context
 import android.util.Xml
+import com.example.wilko.songle.dataClasses.Song
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import java.io.IOException

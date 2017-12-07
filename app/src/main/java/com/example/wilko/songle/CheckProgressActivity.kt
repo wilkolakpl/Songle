@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import com.example.wilko.songle.utils.AsyncCompleteListener
 import kotlinx.android.synthetic.main.activity_check_progress.*
 import kotlinx.android.synthetic.main.content_check_progress.*
 import org.jetbrains.anko.alert
@@ -22,7 +23,7 @@ class CheckProgressActivity : AppCompatActivity() {
         setContentView(R.layout.activity_check_progress)
         setSupportActionBar(toolbar)
 
-        LyricWordSplicer(LyricStrLoad(), WeakReference<Context>(applicationContext)).execute()
+        LyricWordSplicer(LyricStrLoad()).execute()
 
         guessButton.setOnClickListener { _ ->
             val intent = Intent(this, SongSelectionActivity::class.java)
@@ -54,7 +55,7 @@ class CheckProgressActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        LyricWordSplicer(LyricStrLoad(), WeakReference<Context>(applicationContext)).execute()
+        LyricWordSplicer(LyricStrLoad()).execute()
     }
 
     override fun onDestroy() {
@@ -66,7 +67,7 @@ class CheckProgressActivity : AppCompatActivity() {
         }
     }
 
-    private inner class LyricStrLoad : AsyncCompleteListener<String>{
+    private inner class LyricStrLoad : AsyncCompleteListener<String> {
         override fun asyncComplete(result: String?) {
             if (result != null){
                 collectedWords.text = "\n\n" + result

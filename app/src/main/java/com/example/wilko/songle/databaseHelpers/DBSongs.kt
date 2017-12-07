@@ -1,9 +1,10 @@
-package com.example.wilko.songle
+package com.example.wilko.songle.databaseHelpers
 
 import android.content.ContentValues
-import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.example.wilko.songle.App
+import com.example.wilko.songle.dataClasses.Song
 
 /**
  * Created by wilko on 10/22/2017.
@@ -14,7 +15,7 @@ import android.database.sqlite.SQLiteOpenHelper
  * https://www.youtube.com/watch?v=Jcmp09LkU-I
  */
 
-class DBSongs(context: Context) : SQLiteOpenHelper(context, "songs.db", null, 1) {
+object DBSongs : SQLiteOpenHelper(App.instance, "songs.db", null, 1) {
 
     private val TABLE_SONGS = "songs"
     private val COLUMN_NUMBER = "number"
@@ -100,7 +101,7 @@ class DBSongs(context: Context) : SQLiteOpenHelper(context, "songs.db", null, 1)
                     c.getString(c.getColumnIndex(COLUMN_KMLLOCATION3)),
                     c.getString(c.getColumnIndex(COLUMN_KMLLOCATION4)),
                     c.getString(c.getColumnIndex(COLUMN_KMLLOCATION5))
-                    ))
+            ))
             c.moveToNext()
         }
         c.close()

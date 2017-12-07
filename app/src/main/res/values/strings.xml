@@ -24,7 +24,6 @@
     <string name="downloading_kmls">Downloading layers of kml\'s</string>
     <string name="downloading_lyrics">Downloading a list of lyrics</string>
     <string name="downloading_interrupted">IT HAS TO DOWNLOAD FIRST</string>
-    <string name="downloading_unnecessary">Already downloaded</string>
     <string name="downloading_error">Unable download songs</string>
     <string name="no_internet">Please connect to the internet</string>
     <string name="no_internet_but_available">No internet, but available offline</string>

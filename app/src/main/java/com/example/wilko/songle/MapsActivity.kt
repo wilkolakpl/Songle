@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources
-import android.graphics.Color
 import android.location.Location
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
@@ -12,10 +11,13 @@ import android.os.Vibrator
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.util.Log
-import android.util.TypedValue
 import android.view.Menu
 import android.view.MenuItem
 import android.view.ViewGroup
+import com.example.wilko.songle.dataClasses.CollectedWord
+import com.example.wilko.songle.databaseHelpers.DBCollectedWords
+import com.example.wilko.songle.databaseHelpers.DBPlacemarks
+import com.example.wilko.songle.databaseHelpers.DBSongs
 import com.github.jinatonic.confetti.CommonConfetti
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.api.GoogleApiClient
@@ -38,9 +40,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
     private lateinit var mGoogleApiClient: GoogleApiClient
     private val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
     private var mLastLocation : Location? = null
-    private val dbCollectedWordsHandler = DBCollectedWords(this)
-    private val dbPlacemarkHandler = DBPlacemarks(this)
-    private val dbSongHandler = DBSongs(this)
+    private val dbCollectedWordsHandler = DBCollectedWords
+    private val dbPlacemarkHandler = DBPlacemarks
+    private val dbSongHandler = DBSongs
     private val mapMarkers = hashMapOf<String, Marker>()
     private var vibration : Boolean = true
 
