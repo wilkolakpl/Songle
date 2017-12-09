@@ -2,17 +2,16 @@ package com.example.wilko.songle
 
 import android.app.Activity
 import android.app.AlertDialog
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import com.example.wilko.songle.utils.AsyncCompleteListener
 import kotlinx.android.synthetic.main.activity_check_progress.*
 import kotlinx.android.synthetic.main.content_check_progress.*
 import org.jetbrains.anko.alert
 import org.jetbrains.anko.noButton
 import org.jetbrains.anko.yesButton
-import java.lang.ref.WeakReference
 
 class CheckProgressActivity : AppCompatActivity() {
 
@@ -23,6 +22,7 @@ class CheckProgressActivity : AppCompatActivity() {
         setContentView(R.layout.activity_check_progress)
         setSupportActionBar(toolbar)
 
+        // loading the to-be-displayed spatially arranged collected words
         LyricWordSplicer(LyricStrLoad()).execute()
 
         guessButton.setOnClickListener { _ ->
@@ -33,7 +33,7 @@ class CheckProgressActivity : AppCompatActivity() {
         }
 
         resetButton.setOnClickListener { _ ->
-            alert = alert("You are about to clear your progress, proceed?") {
+            alert = alert(getString(R.string.give_up_message)) {
                 yesButton { val returnIntent = Intent()
                     returnIntent.putExtra("reset", true)
                     setResult(Activity.RESULT_OK, returnIntent)
@@ -43,7 +43,7 @@ class CheckProgressActivity : AppCompatActivity() {
         }
 
         upgradeButton.setOnClickListener { _ ->
-            alert = alert("You are about to lower the difficulty and the obtainable score, proceed?") {
+            alert = alert(getString(R.string.upgrade_message)) {
                 yesButton { val upgradeIntent = Intent()
                     upgradeIntent.putExtra("upgrade", true)
                     setResult(Activity.RESULT_OK, upgradeIntent)
@@ -63,7 +63,7 @@ class CheckProgressActivity : AppCompatActivity() {
         try {
             alert.dismiss()
         } catch (e: UninitializedPropertyAccessException){
-
+            Log.i(localClassName, "alert uninitialized")
         }
     }
 

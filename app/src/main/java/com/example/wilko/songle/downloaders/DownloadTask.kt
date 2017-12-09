@@ -24,9 +24,12 @@ abstract class DownloadTask<E>(private val caller : AsyncCompleteListener<E>) :
         return try {
             loadFromNetwork()
         } catch (e: IOException) {
+            // in this case, either there is no internet connection or unable to store locally
+            // a message will be propagated to the UI: "No internet or not enough storage"
             Log.e(TAG, "IOException")
             null
         } catch (e: XmlPullParserException) {
+            // this exception is not fixable by the user, so it will not be propagated to UI
             Log.e(TAG, "Error Parsing")
             null
         }
@@ -54,7 +57,7 @@ abstract class DownloadTask<E>(private val caller : AsyncCompleteListener<E>) :
     }
 
     @Throws(IOException::class)
-    fun fromStreamtoCacheFile(context: Context, cacheFileName: String, inputStream: InputStream) {
+    fun fromStreamToFile(context: Context, cacheFileName: String, inputStream: InputStream) {
         val file = File(context.filesDir, cacheFileName)
         FileUtils.copyInputStreamToFile(inputStream, file)
     }

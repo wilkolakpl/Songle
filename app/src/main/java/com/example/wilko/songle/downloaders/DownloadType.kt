@@ -9,7 +9,7 @@ package com.example.wilko.songle.downloaders
 enum class DownloadType{
     SONGS,
     NO_NEW_SONGS,
-    IMG,
+    LYRICS,
     KLMS,
-    LYRIC
+    IMGS
 }

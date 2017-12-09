@@ -5,4 +5,4 @@ package com.example.wilko.songle.dataClasses
  */
 
 data class CollectedWord(val name: String)
-                         // *name is the line and word number in this format %:%
+                         // *name is the line and word number in this format #:#

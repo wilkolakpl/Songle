@@ -5,4 +5,4 @@ package com.example.wilko.songle.dataClasses
  */
 
 data class Placemark(val name: String, val description: String, val styleUrl: String, val lat: Double, val long: Double)
-                     // *name is the line and word number in this format %:%
+                     // *name is the line and word number in this format #:#

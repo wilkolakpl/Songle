@@ -32,13 +32,13 @@ class XmlSongParser : XmlParser() {
         parser.require(XmlPullParser.START_TAG, ns, "Songs")
 
         // compares the timestamp of the stored xml with the one on the server
-        val prevTimestamp = getInfo("timestamp", context)
+        val prevTimestamp = getTimestamp(context)
         val currTimestamp = parser.getAttributeValue(null, "timestamp")
         if (prevTimestamp == currTimestamp) {
             // if they are the same, the parsing ends here, and an empty list is returned
             return entries
         }
-        saveInfo("timestamp", currTimestamp, context)
+        saveTimestamp(currTimestamp, context)
 
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.eventType != XmlPullParser.START_TAG) {
@@ -54,15 +54,15 @@ class XmlSongParser : XmlParser() {
         return entries
     }
 
-    private fun getInfo(key: String, context: Context): String{
+    private fun getTimestamp(context: Context): String{
         val sharedPref = context.getSharedPreferences("permStrs", Context.MODE_PRIVATE)
-        return sharedPref.getString(key, "")
+        return sharedPref.getString("timestamp", "")
     }
 
-    private fun saveInfo(key: String, value: String, context: Context){
+    private fun saveTimestamp(value: String, context: Context){
         val sharedPref = context.getSharedPreferences("permStrs", Context.MODE_PRIVATE)
         val editor = sharedPref.edit()
-        editor.putString(key, value)
+        editor.putString("timestamp", value)
         editor.apply()
     }
 

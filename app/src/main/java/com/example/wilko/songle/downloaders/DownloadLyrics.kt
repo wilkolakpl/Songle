@@ -1,12 +1,10 @@
 package com.example.wilko.songle.downloaders
 
 import android.content.ContentValues
-import android.content.Context
 import com.example.wilko.songle.utils.AsyncCompleteListener
 import com.example.wilko.songle.dataClasses.Song
 import com.example.wilko.songle.databaseHelpers.DBSongs
 import org.apache.commons.io.IOUtils
-import java.lang.ref.WeakReference
 import java.util.*
 
 /**
@@ -35,6 +33,6 @@ class DownloadLyrics(caller : AsyncCompleteListener<DownloadType>) : DownloadTas
         }
         db.close()
 
-        return DownloadType.LYRIC
+        return DownloadType.LYRICS
     }
 }

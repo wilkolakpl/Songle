@@ -54,8 +54,9 @@ class ModelHand(private val context : Context, private val id : Int) {
         gl.glDisableClientState(GL10.GL_VERTEX_ARRAY)
     }
 
+    // populating vertices and indices from an obj file
     fun loadMesh(){
-        // populating vertices and indices from an obj file
+
         val verticesList = ArrayList<Float>()
         val indicesList = ArrayList<Int>()
 
@@ -90,6 +91,7 @@ class ModelHand(private val context : Context, private val id : Int) {
                             // -1 is necessary as our renderer takes zero indexed vertices
                         }
                     }
+                    // the obj file I prepared also has square faces, unsupported by the renderer:
                     else if (tokens.size == 5){ //case face is a square
                         for (i in tokens.indices){
                             if ((i == 0) or (i == 2)) continue //forming one triangle

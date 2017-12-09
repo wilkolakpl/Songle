@@ -6,7 +6,7 @@
     <string name="title_guess_song">Guess song</string>
 
     <string name="continue_playing">Continue playing!</string>
-    <string name="start_new_game">Start new game</string>
+    <string name="start_new_game">Start a new game</string>
     <string name="new_game">New game started!</string>
     <string name="map_upgrade">Map upgrade!</string>
     <string name="how_did_you_do">the suspense…</string>
@@ -14,18 +14,21 @@
     <string name="incorrect_guess">INCORRECT!</string>
     <string name="score_descr">score:</string>
 
+
     <string name="no_words_yet">Collect some more words!\nThey will be here.</string>
     <string name="give_up">Give Up</string>
+    <string name="give_up_message">Clear your progress?</string>
     <string name="upgrade">Upgrade</string>
+    <string name="upgrade_message">Lower the difficulty and the obtainable score?</string>
 
     <!-- Strings related to the download sequencing -->
-    <string name="downloading_xml">Downloading a list of songs</string>
-    <string name="downloading_pngs">Downloading images of pins</string>
-    <string name="downloading_kmls">Downloading layers of kml\'s</string>
-    <string name="downloading_lyrics">Downloading a list of lyrics</string>
-    <string name="downloading_interrupted">IT HAS TO DOWNLOAD FIRST</string>
+    <string name="downloading_xml">Downloading songs</string>
+    <string name="downloading_pngs">Downloading images</string>
+    <string name="downloading_kmls">Downloading maps</string>
+    <string name="downloading_lyrics">Downloading lyrics</string>
     <string name="downloading_error">Unable download songs</string>
-    <string name="no_internet">Please connect to the internet</string>
+    <string name="no_internet">No internet, please connect</string>
+    <string name="no_internet_or_storage">No internet or not enough storage</string>
     <string name="no_internet_but_available">No internet, but available offline</string>
     <string name="soon">soon</string>
 
