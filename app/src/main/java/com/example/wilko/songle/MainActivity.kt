@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         this.registerReceiver(receiver, filter)
 
         mapButton.setOnClickListener {
-            if (getIntInfo("newGame") == 1){
+            if (getNewGame()){
                 startNewGame()
             } else if(getIntInfo("cached") == 4){
                 val intent = Intent(this, MapsActivity::class.java)
@@ -91,7 +91,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         }
 
         checkProgressButton.setOnClickListener {
-            if (getIntInfo("newGame") == 1){
+            if (getNewGame()){
                 startNewGame()
             } else if (getIntInfo("cached") == 4){
                 val intent = Intent(this, CheckProgressActivity::class.java)
@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
 
         // setting up progressBar
         val rotatingPlane = WanderingCubes()
-        progressBar = (spin_kit as ProgressBar)
+        progressBar = spin_kit
         progressBar.indeterminateDrawable = rotatingPlane
         progressBar.visibility = View.GONE
     }
@@ -126,7 +126,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     }
 
     fun continueTxt() {
-        if (getIntInfo("cached") == 4 && getIntInfo("newGame") == 0){
+        if (getIntInfo("cached") == 4 && !getNewGame()){
             score.text = score()
             mainTextLog.text = getString(R.string.continue_playing)
         } else {
@@ -176,24 +176,38 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         return super.onPrepareOptionsMenu(menu)
     }
 
-    fun saveIntInfo(key: String, int: Int){
-        val sharedPref = getSharedPreferences("permInts", Context.MODE_PRIVATE)
+    fun setIntInfo(key: String, int: Int){
+        val sharedPref = getSharedPreferences("stateVars", Context.MODE_PRIVATE)
         val editor = sharedPref.edit()
         editor.putInt(key, int)
         editor.apply()
     }
 
-    fun saveTimestamp(string: String){
-        val sharedPref = getSharedPreferences("permStrs", Context.MODE_PRIVATE)
+    fun getIntInfo(key: String): Int{
+        val sharedPref = getSharedPreferences("stateVars", Context.MODE_PRIVATE)
+        return sharedPref.getInt(key, 0)
+    }
+
+    fun setTimestamp(string: String){
+        val sharedPref = getSharedPreferences("stateVars", Context.MODE_PRIVATE)
         val editor = sharedPref.edit()
         editor.putString("timestamp", string)
         editor.apply()
     }
 
-    fun getIntInfo(key: String): Int{
-        val sharedPref = getSharedPreferences("permInts", Context.MODE_PRIVATE)
-        return sharedPref.getInt(key, 0)
+    fun setNewGame(boolean: Boolean){
+        val sharedPref = getSharedPreferences("stateVars", Context.MODE_PRIVATE)
+        val editor = sharedPref.edit()
+        editor.putBoolean("newGame", boolean)
+        editor.apply()
     }
+
+    fun getNewGame(): Boolean{
+        val sharedPref = getSharedPreferences("stateVars", Context.MODE_PRIVATE)
+        return sharedPref.getBoolean("newGame", true)
+    }
+
+
 
     // variable representing which pose the hand is currently in
     private var state = 0
@@ -325,7 +339,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                         titleStr = getString(R.string.incorrect_guess)
                         handRoll(false)
                     }
-                    saveIntInfo("newGame", 1)
+                    setNewGame(true)
                 } else if (didUpgrade) {
                     mainTextLog.text = getString(R.string.map_upgrade)
                     showDifficultyDialog()
@@ -337,11 +351,8 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
             }
         } else if (requestCode == 2) {
             // returning from settings and updating preferences
-            myRenderer.changeProfanity()
-            val sharedPref = baseContext.defaultSharedPreferences
-            vibration = sharedPref.getBoolean("vibration", true)
+            this.recreate()
 
-            continueTxt()
         }
         // reset hand to neutral state when returning from an activity
         myRenderer.changeStateFlag(0)
@@ -355,7 +366,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         mainTextLog.text = getString(R.string.downloading_xml)
 
         // UI behaviour
-        saveIntInfo("newGame", 1)
+        setNewGame(true)
         blockInput()
 
         DownloadSongXml(NetworkReceiver()).execute()
@@ -384,36 +395,35 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                 if (result == DownloadType.SONGS) {
                     mainTextLog.text = getString(R.string.downloading_lyrics)
                     DownloadLyrics(this).execute()
-                    saveIntInfo("cached", 1)
+                    setIntInfo("cached", 1)
                 } else if (result == DownloadType.NO_NEW_SONGS && getIntInfo("cached") == 4) {
                     chooseSong()
                 } else if (result == DownloadType.LYRICS && getIntInfo("cached") == 1) {
                     mainTextLog.text = getString(R.string.downloading_kmls)
                     DownloadKmls(this).execute()
-                    saveIntInfo("cached", 2)
+                    setIntInfo("cached", 2)
                 } else if (result == DownloadType.KLMS && getIntInfo("cached") == 2) {
                     mainTextLog.text = getString(R.string.downloading_pngs)
                     DownloadPinPngs(this).execute()
-                    saveIntInfo("cached", 3)
+                    setIntInfo("cached", 3)
                 } else if (result == DownloadType.IMGS && getIntInfo("cached") == 3) {
                     chooseSong()
-                    saveIntInfo("cached", 4)
+                    setIntInfo("cached", 4)
                 } else {
                     // edge case: when the download has been interrupted - the song list timestamp
                     // has been preserved, but later staging has failed - just restart the download
                     mainTextLog.text = getString(R.string.downloading_xml)
-                    saveTimestamp("reset")
+                    setTimestamp("reset")
                     DownloadSongXml(this).execute()
                 }
             } else {
                 if (getIntInfo("cached") == 4){
-                    mainTextLog.text = getString(R.string.no_internet_but_available)
                     chooseSong()
                 } else {
                     mainTextLog.text = getString(R.string.no_internet_or_storage)
 
                     // reset flag
-                    saveIntInfo("cached", 0)
+                    setIntInfo("cached", 0)
 
                     progressBar.visibility = View.GONE
                     unblockInput()
@@ -426,7 +436,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         mainTextLog.text = getString(R.string.new_game)
 
         // setting 0 for mapNo, indicating that it has not been assigned yet
-        saveIntInfo("mapNo", 0)
+        setIntInfo("mapNo", 0)
 
         // choosing a song at random
         val num = dbSongHandler.howMany()
@@ -435,15 +445,17 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
             // ensuring that it is not the previously guessed song
             random = (1..(num+1)).random()
         }
-        saveIntInfo("currentSong", random)
+        setIntInfo("currentSong", random)
 
         // resetting the collected words database
         dbCollectedWordsHandler.deleteAll()
+        // showing the new score (of 0.00)
+        score.text = score()
 
         progressBar.visibility = View.GONE
 
         // cheat, to display the number of the chosen song
-        mainTextLog.text = getIntInfo("currentSong").toString()
+        // mainTextLog.text = getIntInfo("currentSong").toString()
 
         showDifficultyDialog()
     }
@@ -492,7 +504,6 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         }
         popUp.show()
 
-        score.text = score()
     }
 
     fun grayOutButton(ib : ImageButton, resource : Int){
@@ -520,13 +531,13 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                 return@async
             }
             val kmlParser = KmlParser()
-            val placemarks = bg{kmlParser.parse(kmlFile, applicationContext)}
+            val placemarks = bg{kmlParser.parse(kmlFile)}
             dbPlacemarkHandler.deleteAll()
             dbPlacemarkHandler.addAll(placemarks.await())
             // the flagging is delayed until the background thread's callback
             if (placemarks.await() != null) {
-                saveIntInfo("mapNo", mapNo)
-                saveIntInfo("newGame", 0)
+                setIntInfo("mapNo", mapNo)
+                setNewGame(false)
                 unblockInput()
             }
 

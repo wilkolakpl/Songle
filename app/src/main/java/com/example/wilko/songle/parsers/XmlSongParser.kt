@@ -38,7 +38,7 @@ class XmlSongParser : XmlParser() {
             // if they are the same, the parsing ends here, and an empty list is returned
             return entries
         }
-        saveTimestamp(currTimestamp, context)
+        setTimestamp(currTimestamp, context)
 
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.eventType != XmlPullParser.START_TAG) {
@@ -55,12 +55,12 @@ class XmlSongParser : XmlParser() {
     }
 
     private fun getTimestamp(context: Context): String{
-        val sharedPref = context.getSharedPreferences("permStrs", Context.MODE_PRIVATE)
+        val sharedPref = context.getSharedPreferences("stateVars", Context.MODE_PRIVATE)
         return sharedPref.getString("timestamp", "")
     }
 
-    private fun saveTimestamp(value: String, context: Context){
-        val sharedPref = context.getSharedPreferences("permStrs", Context.MODE_PRIVATE)
+    private fun setTimestamp(value: String, context: Context){
+        val sharedPref = context.getSharedPreferences("stateVars", Context.MODE_PRIVATE)
         val editor = sharedPref.edit()
         editor.putString("timestamp", value)
         editor.apply()

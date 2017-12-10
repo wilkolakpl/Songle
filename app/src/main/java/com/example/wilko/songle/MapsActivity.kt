@@ -318,7 +318,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
     }
 
     fun getCurrentSong(): Int{
-        val sharedPref = getSharedPreferences("permInts", Context.MODE_PRIVATE)
+        val sharedPref = getSharedPreferences("stateVars", Context.MODE_PRIVATE)
         return sharedPref.getInt("currentSong", 0)
     }
 }

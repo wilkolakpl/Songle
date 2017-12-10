@@ -1,0 +1,57 @@
+<resources>
+    <string name="app_name">Songle</string>
+    <string name="title_activity_settings">Ustawienia</string>
+    <string name="title_activity_maps">Mapa</string>
+    <string name="title_activity_check_progress">Postęp</string>
+    <string name="title_guess_song">Zgadnij piosenkę</string>
+
+    <string name="continue_playing">Graj dalej!</string>
+    <string name="start_new_game">Zacznij nową grę</string>
+    <string name="new_game">Nowa gra!</string>
+    <string name="map_upgrade">Mapa ulepszona!</string>
+    <string name="how_did_you_do">ten suspens…</string>
+    <string name="correct_guess">PRAWIDŁOWO!</string>
+    <string name="incorrect_guess">NIEPRAWIDŁOWO!</string>
+    <string name="score_descr">wynik:</string>
+
+
+    <string name="no_words_yet">Zbierz więcej słów!\nBędą na Ciebie czekać tutaj.</string>
+    <string name="give_up">Poddaj</string>
+    <string name="give_up_message">Usunąć Postęp?</string>
+    <string name="upgrade">Ulepsz</string>
+    <string name="upgrade_message">Obniżyć poziom trudności i możliwy wynik?</string>
+
+    <!-- Strings related to the download sequencing -->
+    <string name="downloading_xml">Ściąga piosenki</string>
+    <string name="downloading_pngs">Ściąga obrazy</string>
+    <string name="downloading_kmls">Ściąga mapy</string>
+    <string name="downloading_lyrics">Ściąga teksty</string>
+    <string name="downloading_error">Nie może ściągnąć piosenek</string>
+    <string name="no_internet">Brak internetu, podłącz</string>
+    <string name="no_internet_or_storage">Brak internetu albo miejsca na dysku</string>
+    <string name="soon">niedługo</string>
+    <string name="score_0.0">0,00</string>
+
+    <!-- Strings related to Settings -->
+    <string name="pref_header_general">Ogólne</string>
+
+    <string name="pref_title_profanity">Włącz blużnierstwo</string>
+    <string name="pref_description_profanity">Używaj nie-cenzurowanej wersji aplikacji</string>
+
+    <string name="pref_title_vibration">Włącz wibracje</string>
+    <string name="pref_description_vibration">Czuj pozytywne wibracje podczas gry</string>
+
+    <string name="pref_title_system_language">Używaj języka systemu</string>
+    <string name="pref_description_system_language">Używaj ogólnego języka telefonu (jeżeli dostępny)</string>
+
+    <string name="pref_title_select_language">Wybierz język</string>
+    <string-array name="pref_languages_list_titles">
+        <item>Angielski</item>
+        <item>Polski</item>
+    </string-array>
+    <string-array name="pref_languages_list_values">
+        <item>en</item>
+        <item>pl</item>
+    </string-array>
+
+</resources>

@@ -60,7 +60,7 @@ class LyricWordSplicer(private val caller : AsyncCompleteListener<String>) :
     }
 
     fun getCurrSong(context: Context): Int{
-        val sharedPref = context.getSharedPreferences("permInts", Context.MODE_PRIVATE)
+        val sharedPref = context.getSharedPreferences("stateVars", Context.MODE_PRIVATE)
         return sharedPref.getInt("currentSong", 0)
     }
 

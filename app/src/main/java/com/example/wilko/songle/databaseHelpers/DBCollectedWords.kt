@@ -67,6 +67,7 @@ object DBCollectedWords : SQLiteOpenHelper(App.instance, "collectedWords.db", nu
         c.moveToFirst()
         while (!c.isAfterLast){
             map[c.getString(c.getColumnIndex(COLUMN_NAME))] = true
+            // the boolean value doesn't matter. The hashmap is only used for O(1) key lookup.
             c.moveToNext()
         }
         c.close()

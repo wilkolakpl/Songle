@@ -19,7 +19,7 @@ class KmlParser : XmlParser() {
     private val collectedWords = HashMap<String, Boolean>()
 
     @Throws(XmlPullParserException::class, IOException::class)
-    fun parse(input : InputStream, context: Context): List<Placemark> {
+    fun parse(input : InputStream): List<Placemark> {
         input.use {
             val dbCollectedWordsHandler = DBCollectedWords
             dbCollectedWordsHandler.populateHashMap(collectedWords)
