@@ -14,9 +14,9 @@ import java.lang.ref.WeakReference
  */
 
 class LyricWordSplicer(private val caller : AsyncCompleteListener<String>) :
-        AsyncTask<String, Void, String>() {
+        AsyncTask<Unit, Void, String>() {
 
-    override fun doInBackground(vararg urls: String): String{
+    override fun doInBackground(vararg vararg: Unit): String{
 
         // getting the complete lyrics
         val dbSongHandler = DBSongs

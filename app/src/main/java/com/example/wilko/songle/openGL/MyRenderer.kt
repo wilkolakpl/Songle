@@ -41,6 +41,7 @@ class MyRenderer(context : Context) : GLSurfaceView.Renderer {
     }
 
     override fun onDrawFrame(gl: GL10){
+        // color change
         if (color > 1 || color < 0){
             colorVelocity = -colorVelocity
         }
@@ -53,7 +54,7 @@ class MyRenderer(context : Context) : GLSurfaceView.Renderer {
 
         gl.glClearColor(color*0.5F, color*0.5F, color*0.2F, 1F)
 
-
+        // rotation
         val time : Long = SystemClock.uptimeMillis() % 4000L
         val angle : Float = .09F * time.toInt()
 

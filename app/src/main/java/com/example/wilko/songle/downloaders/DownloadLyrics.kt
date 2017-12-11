@@ -25,7 +25,9 @@ class DownloadLyrics(caller : AsyncCompleteListener<DownloadType>) : DownloadTas
             val ctn = ContentValues()
             ctn.put("lyric", lyricString)
             // calculating the number of words in a song, needed for the scoring system
-            val noOfWords = lyricString.split(" ") as MutableList<String>
+            val noOfWords = lyricString.split(" ", "\n") as MutableList<String>
+            print(noOfWords)
+            print(noOfWords.size)
             noOfWords.removeAll(Arrays.asList(""))
             ctn.put("noOfWords", noOfWords.size)
 

@@ -13,15 +13,11 @@ import android.widget.ImageButton
 import com.google.android.youtube.player.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
-import java.io.FileInputStream
 import java.lang.Math.pow
 import java.util.*
 import android.graphics.PorterDuff
 import android.os.Vibrator
 import android.preference.PreferenceManager
-import kotlinx.coroutines.experimental.android.UI
-import kotlinx.coroutines.experimental.async
-import org.jetbrains.anko.coroutines.experimental.bg
 import android.widget.ProgressBar
 import com.github.jinatonic.confetti.CommonConfetti
 import com.github.ybq.android.spinkit.style.*
@@ -29,14 +25,10 @@ import android.preference.PreferenceActivity
 import android.util.Log
 import org.jetbrains.anko.defaultSharedPreferences
 import com.example.wilko.songle.databaseHelpers.DBCollectedWords
-import com.example.wilko.songle.databaseHelpers.DBPlacemarks
 import com.example.wilko.songle.databaseHelpers.DBSongs
 import com.example.wilko.songle.downloaders.*
 import com.example.wilko.songle.openGL.MyRenderer
-import com.example.wilko.songle.parsers.KmlParser
 import com.example.wilko.songle.utils.AsyncCompleteListener
-import java.io.IOException
-import java.io.InputStream
 
 
 /**
@@ -57,7 +49,6 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     private lateinit var popUp: AlertDialog
     private lateinit var popUpFragment: YouTubePlayerSupportFragment
     private val dbSongHandler = DBSongs
-    private val dbPlacemarkHandler = DBPlacemarks
     private val dbCollectedWordsHandler = DBCollectedWords
     private lateinit var myRenderer : MyRenderer
     private lateinit var titleStr : String
@@ -79,7 +70,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         surfaceView.setRenderer(myRenderer)
 
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        this.registerReceiver(receiver, filter)
+        registerReceiver(receiver, filter)
 
         mapButton.setOnClickListener {
             if (getNewGame()){
@@ -137,14 +128,15 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     fun score(won: Boolean = false) : String {
         val noOfWords = dbSongHandler.getProp(getIntInfo("currentSong"), "noOfWords").toDouble()
         val collectedWords = dbCollectedWordsHandler.howMany()
-        var score = 3*(10*Math.log10((collectedWords/noOfWords)+0.1)+10)
+        val proportionCollected = (collectedWords/noOfWords)*100
+        var score = 3*(10*Math.log10(proportionCollected+0.1)+10)
         if (won){ // award bonus points, in accordance to the difficulty level/selected map
             when (getIntInfo("mapNo")){
-                1 -> score += 3*(-10*Math.log10((collectedWords/noOfWords)+1)+36-Math.pow((((collectedWords/noOfWords)-12.5)/20),2.0))
-                2 -> score += 3*(-10*Math.log10((collectedWords/noOfWords)+1)+34-Math.pow((((collectedWords/noOfWords)-25)/20),2.0))
-                3 -> score += 3*(-10*Math.log10((collectedWords/noOfWords)+1)+32-Math.pow((((collectedWords/noOfWords)-37.5)/20),2.0))
-                4 -> score += 3*(-10*Math.log10((collectedWords/noOfWords)+1)+30-Math.pow((((collectedWords/noOfWords)-50)/20),2.0))
-                5 -> score += 3*(-10*Math.log10((collectedWords/noOfWords)+1)+28-Math.pow((((collectedWords/noOfWords)-50)/20),2.0))
+                1 -> score += 3*(-10*Math.log10(proportionCollected+1)+36-Math.pow(((proportionCollected-12.5)/20),2.0))
+                2 -> score += 3*(-10*Math.log10(proportionCollected+1)+34-Math.pow(((proportionCollected-25)/20),2.0))
+                3 -> score += 3*(-10*Math.log10(proportionCollected+1)+32-Math.pow(((proportionCollected-37.5)/20),2.0))
+                4 -> score += 3*(-10*Math.log10(proportionCollected+1)+30-Math.pow(((proportionCollected-50)/20),2.0))
+                5 -> score += 3*(-10*Math.log10(proportionCollected+1)+28-Math.pow(((proportionCollected-50)/20),2.0))
             }
         }
         return "%.2f".format(score)
@@ -207,13 +199,11 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         return sharedPref.getBoolean("newGame", true)
     }
 
-
-
     // variable representing which pose the hand is currently in
     private var state = 0
     fun handRoll(won: Boolean){
         // block input during animation
-        blockInput()
+        blockInput(false)
 
         val x : Int
         if (won) {
@@ -264,8 +254,11 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     }
 
     private fun unblockInput(){
+        progressBar.visibility = View.GONE
         mapButton.isEnabled = true
+        mapButton.setImageDrawable(getDrawable(R.drawable.ic_mapicon))
         checkProgressButton.isEnabled = true
+        checkProgressButton.setImageDrawable(getDrawable(R.drawable.ic_progressicon))
         try {
             toolMenu.getItem(0).isEnabled = true
         } catch (e : UninitializedPropertyAccessException) {
@@ -273,9 +266,12 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         }
     }
 
-    private fun blockInput(){
-        mapButton.isEnabled = false
-        checkProgressButton.isEnabled = false
+    private fun blockInput(spin : Boolean = true){
+        if (spin) {
+            progressBar.visibility = View.VISIBLE
+        } // its not going to show the loading spin during guess animation
+        grayOutButton(mapButton, R.drawable.ic_mapicon)
+        grayOutButton(checkProgressButton, R.drawable.ic_progressicon)
         try {
             toolMenu.getItem(0).isEnabled = false
         } catch (e : UninitializedPropertyAccessException) {
@@ -303,12 +299,12 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
 
     override fun onInitializationSuccess(p0: YouTubePlayer.Provider?, player: YouTubePlayer?, wasRestored: Boolean) {
         if (!wasRestored) {
-            player!!.loadVideo(dbSongHandler.getProp(getIntInfo("currentSong"), "link"))
+            player?.loadVideo(dbSongHandler.getProp(getIntInfo("currentSong"), "link"))
         }
     }
 
     override fun onInitializationFailure(p0: YouTubePlayer.Provider?, p1: YouTubeInitializationResult?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        Log.e(localClassName, "failed to initialize youtube player fragment")
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -350,9 +346,11 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                 mainTextLog.text = getString(R.string.continue_playing)
             }
         } else if (requestCode == 2) {
-            // returning from settings and updating preferences
-            this.recreate()
-
+            // returning from settings and updating the view to reflect preferences
+            finish()
+            startActivity(intent)
+            // recreate() cannot be used here as it has a bug associated with it,
+            // where the polish comma instead of a period wouldn't properly refresh in the score :P
         }
         // reset hand to neutral state when returning from an activity
         myRenderer.changeStateFlag(0)
@@ -361,7 +359,6 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
 
     fun startNewGame() {
         // UI appearance
-        progressBar.visibility = View.VISIBLE
         score.text =  getString(R.string.soon)
         mainTextLog.text = getString(R.string.downloading_xml)
 
@@ -425,7 +422,6 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                     // reset flag
                     setIntInfo("cached", 0)
 
-                    progressBar.visibility = View.GONE
                     unblockInput()
                 }
             }
@@ -452,8 +448,6 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         // showing the new score (of 0.00)
         score.text = score()
 
-        progressBar.visibility = View.GONE
-
         // cheat, to display the number of the chosen song
         // mainTextLog.text = getIntInfo("currentSong").toString()
 
@@ -461,6 +455,9 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     }
 
     fun showDifficultyDialog(){
+        // this is needed in case of map upgrade, the user needs to wait till kml is parsed
+        blockInput()
+
         val mBuilder = AlertDialog.Builder(this@MainActivity)
         val setDifficultyView = layoutInflater.inflate(R.layout.difficulity, null)
         val diff5 = setDifficultyView.findViewById<ImageButton>(R.id.diff5Button)
@@ -478,32 +475,36 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
             popUp.setCanceledOnTouchOutside(false)
         }
         if (currentMapNo < 5){
-            setActiveButton(popUp, diff5, 5)
+            setUpActiveButton(popUp, diff5, 5)
         } else {
             grayOutButton(diff5, R.drawable.ic_diff5)
         }
         if (currentMapNo < 4){
-            setActiveButton(popUp, diff4, 4)
+            setUpActiveButton(popUp, diff4, 4)
         } else {
             grayOutButton(diff4, R.drawable.ic_diff4)
         }
         if (currentMapNo < 3){
-            setActiveButton(popUp, diff3, 3)
+            setUpActiveButton(popUp, diff3, 3)
         } else {
             grayOutButton(diff3, R.drawable.ic_diff3)
         }
         if (currentMapNo < 2){
-            setActiveButton(popUp, diff2, 2)
+            setUpActiveButton(popUp, diff2, 2)
         } else {
             grayOutButton(diff2, R.drawable.ic_diff2)
         }
         if (currentMapNo < 1){
-            setActiveButton(popUp, diff1, 1)
+            setUpActiveButton(popUp, diff1, 1)
         } else {
             grayOutButton(diff1, R.drawable.ic_diff1)
         }
-        popUp.show()
 
+        popUp.setOnCancelListener{
+            unblockInput()
+        }
+
+        popUp.show()
     }
 
     fun grayOutButton(ib : ImageButton, resource : Int){
@@ -513,34 +514,23 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         ib.isEnabled = false
     }
 
-    fun setActiveButton(ad: AlertDialog, ib: ImageButton, mapNo: Int){
+    fun setUpActiveButton(ad: AlertDialog, ib: ImageButton, mapNo: Int){
         ib.setOnClickListener {
-            loadKml(mapNo)
+            KmlLoaderAsync(KmlReceiver()).execute(mapNo)
             ad.dismiss()
         }
     }
 
-    fun loadKml(mapNo : Int){
-        async(UI){
-            val kmlFile : InputStream?
-            try {
-                kmlFile = FileInputStream(filesDir.toString() + "/map" + mapNo + "song" + getIntInfo("currentSong") + "cacheKml.kml")
-            } catch (e : IOException) {
-                Log.e(localClassName, "couldn't load kml from local storage")
+    private inner class KmlReceiver : AsyncCompleteListener<Int> {
+        override fun asyncComplete(result: Int?) {
+            val mapNo = result
+            if (mapNo == -1 || mapNo == null){ // an error occurred
                 unblockInput()
-                return@async
-            }
-            val kmlParser = KmlParser()
-            val placemarks = bg{kmlParser.parse(kmlFile)}
-            dbPlacemarkHandler.deleteAll()
-            dbPlacemarkHandler.addAll(placemarks.await())
-            // the flagging is delayed until the background thread's callback
-            if (placemarks.await() != null) {
+            } else {
                 setIntInfo("mapNo", mapNo)
                 setNewGame(false)
                 unblockInput()
             }
-
         }
     }
 

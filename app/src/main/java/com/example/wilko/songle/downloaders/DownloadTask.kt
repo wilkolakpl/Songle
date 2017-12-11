@@ -17,10 +17,10 @@ import java.net.URL
  */
 
 abstract class DownloadTask<E>(private val caller : AsyncCompleteListener<E>) :
-        AsyncTask<String, Void, E?>() {
+        AsyncTask<Unit, Void, E?>() {
 
     val TAG = "DownloadTask"
-    override fun doInBackground(vararg vararg: String): E? {
+    override fun doInBackground(vararg vararg: Unit): E? {
         return try {
             loadFromNetwork()
         } catch (e: IOException) {

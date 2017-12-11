@@ -2,7 +2,6 @@ package com.example.wilko.songle
 
 import android.annotation.TargetApi
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.Build
@@ -31,6 +30,8 @@ class SettingsActivity : AppCompatPreferenceActivity(), SharedPreferences.OnShar
     override fun onResume() {
         super.onResume()
         defaultSharedPreferences.registerOnSharedPreferenceChangeListener(this)
+        // preventing bug where the title doesn't change on language change
+        supportActionBar?.title = getString(R.string.title_activity_settings)
     }
 
     override fun onPause() {
@@ -88,16 +89,7 @@ class SettingsActivity : AppCompatPreferenceActivity(), SharedPreferences.OnShar
         resources.configuration.locale = locale
         resources.updateConfiguration(resources.configuration, resources.displayMetrics)
 
-
-        // refreshing the activity, to apply the language immediately
-        val intent = Intent(this, SettingsActivity::class.java)
-        // opening settings fragment directly, bypassing headers, as there is only one
-        intent.putExtra( PreferenceActivity.EXTRA_SHOW_FRAGMENT,
-                SettingsActivity.GeneralPreferenceFragment::class.java.name )
-        intent.putExtra( PreferenceActivity.EXTRA_NO_HEADERS, true )
-        startActivityForResult(intent, 2)
-
-        finish()
+        recreate()
     }
 
     companion object {
@@ -163,7 +155,7 @@ class SettingsActivity : AppCompatPreferenceActivity(), SharedPreferences.OnShar
             if (key == "system_language") {
                 val systemLanguage = sharedPreferences.getBoolean("system_language", true)
                 if (systemLanguage) {
-                    changeLanguage(Locale.getDefault().language)
+                    changeLanguage(Locale.getDefault().displayLanguage)
                 } else {
                     val language = sharedPreferences.getString("language", "en")
                     changeLanguage(language)

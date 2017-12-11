@@ -39,7 +39,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
     private lateinit var mMap: GoogleMap
     private lateinit var mGoogleApiClient: GoogleApiClient
     private val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 1
-    private var mLastLocation : Location? = null
     private val dbCollectedWordsHandler = DBCollectedWords
     private val dbPlacemarkHandler = DBPlacemarks
     private val dbSongHandler = DBSongs
@@ -132,10 +131,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         }
 
         if (ContextCompat.checkSelfPermission(this,
-                android.Manifest.permission.ACCESS_FINE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED){
-            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient)
-        } else {
+                android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED){
+
             ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
                     PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION)
         }
@@ -203,10 +200,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                     markerLocation.latitude = marker.position.latitude
                     markerLocation.longitude = marker.position.longitude
 
-                    if (currentLocation.distanceTo(markerLocation) < 25) {
+                    if (currentLocation.distanceTo(markerLocation) < 1000) {
 
                         // removing marker from google map
-                        mapMarkers[key]!!.remove()
+                        mapMarkers[key]?.remove()
 
                         // removing marker from closest markers list
                         iter.remove()
@@ -259,7 +256,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
     fun score() : String {
         val noOfWords = dbSongHandler.getProp(getCurrentSong(), "noOfWords").toDouble()
         val collectedWords = dbCollectedWordsHandler.howMany()
-        val score = 3*(10*Math.log10((collectedWords/noOfWords)+0.1)+10)
+        val proportionCollected = (collectedWords/noOfWords)*100
+        val score = 3*(10*Math.log10(proportionCollected+0.1)+10)
         return "%.2f".format(score)
     }
 

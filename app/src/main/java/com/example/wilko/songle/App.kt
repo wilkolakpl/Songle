@@ -27,7 +27,7 @@ class App : Application() {
         // set up localization
         val lang = defaultSharedPreferences.getString("language", "en")
         val sysLang = defaultSharedPreferences.getBoolean("system_language", true)
-        val systemLocale = Locale.getDefault().language
+        val systemLocale = Locale.getDefault().displayLanguage
         if (lang != "" && systemLocale != lang && !sysLang) {
             val locale = Locale(lang)
             resources.configuration.locale = locale
