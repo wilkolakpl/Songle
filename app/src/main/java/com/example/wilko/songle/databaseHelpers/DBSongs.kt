@@ -87,7 +87,7 @@ object DBSongs : SQLiteOpenHelper(App.instance, "songs.db", null, 1) {
         val db = writableDatabase
         val query = "SELECT * FROM " + TABLE_SONGS + " WHERE 1"
         val c = db.rawQuery(query, null)
-        c.moveToFirst()
+        c.moveToFirst() // point to first result
 
         while (!c.isAfterLast){
             list.add(Song(c.getInt(c.getColumnIndex(COLUMN_NUMBER)),
@@ -102,7 +102,7 @@ object DBSongs : SQLiteOpenHelper(App.instance, "songs.db", null, 1) {
                     c.getString(c.getColumnIndex(COLUMN_KMLLOCATION4)),
                     c.getString(c.getColumnIndex(COLUMN_KMLLOCATION5))
             ))
-            c.moveToNext()
+            c.moveToNext() // point to the next result
         }
         c.close()
         db.close()
@@ -122,7 +122,7 @@ object DBSongs : SQLiteOpenHelper(App.instance, "songs.db", null, 1) {
         val db = writableDatabase
         val query = "SELECT * FROM " + TABLE_SONGS + " WHERE " + COLUMN_NUMBER + " = " + songNo
         val c = db.rawQuery(query, null)
-        c.moveToFirst()
+        c.moveToFirst() // point to first (and only) result
         val result = c.getString(c.getColumnIndex(prop))
         c.close()
         db.close()

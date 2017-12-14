@@ -64,11 +64,11 @@ object DBCollectedWords : SQLiteOpenHelper(App.instance, "collectedWords.db", nu
         val query = "SELECT * FROM " + TABLE_COLLECTED + " WHERE 1"
         val c = db.rawQuery(query, null)
 
-        c.moveToFirst()
+        c.moveToFirst() // point to first result
         while (!c.isAfterLast){
             map[c.getString(c.getColumnIndex(COLUMN_NAME))] = true
             // the boolean value doesn't matter. The hashmap is only used for O(1) key lookup.
-            c.moveToNext()
+            c.moveToNext() // point to the next result
         }
         c.close()
         db.close()

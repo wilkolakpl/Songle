@@ -81,7 +81,7 @@ object DBPlacemarks : SQLiteOpenHelper(App.instance, "placemarks.db", null, 1) {
         val db = writableDatabase
         val query = "SELECT * FROM " + TABLE_PLACEMARKS + " WHERE 1"
         val c = db.rawQuery(query, null)
-        c.moveToFirst()
+        c.moveToFirst() // point to first result
 
         while (!c.isAfterLast){
 
@@ -107,7 +107,7 @@ object DBPlacemarks : SQLiteOpenHelper(App.instance, "placemarks.db", null, 1) {
 
             list.add(mrkr)
 
-            c.moveToNext()
+            c.moveToNext() // point to next result
         }
         c.close()
         db.close()
