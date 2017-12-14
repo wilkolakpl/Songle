@@ -46,8 +46,6 @@ import com.example.wilko.songle.utils.AsyncCompleteListener
 class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
 
     private val receiver = NetworkReceiver()
-    private lateinit var popUp: AlertDialog
-    private lateinit var popUpFragment: YouTubePlayerSupportFragment
     private val dbSongHandler = DBSongs
     private val dbCollectedWordsHandler = DBCollectedWords
     private lateinit var myRenderer : MyRenderer
@@ -108,21 +106,6 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(receiver)
-
-        // dismissing popUps, needed in case of configuration change
-        try {
-            // dismissing the potential YouTubePlayerFragment in popUp
-            val fragmentTransaction = supportFragmentManager.beginTransaction()
-            fragmentTransaction.remove(popUpFragment)
-            fragmentTransaction.commit()
-        } catch (e : UninitializedPropertyAccessException) {
-            Log.i(localClassName, "popUpFragment uninitialized")
-        }
-        try {
-            popUp.dismiss()
-        } catch (e : UninitializedPropertyAccessException) {
-            Log.i(localClassName, "popUp uninitialized")
-        }
     }
 
     fun continueTxt() {
@@ -303,22 +286,22 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         val videoView = layoutInflater.inflate(R.layout.video, null)
 
         // getting the fragment from the inflated view
-        popUpFragment = supportFragmentManager.findFragmentById(R.id.videoView) as YouTubePlayerSupportFragment
-        popUpFragment.initialize(getString(R.string.google_maps_key), this)
+        val videoPopUpFragment = supportFragmentManager.findFragmentById(R.id.videoView) as YouTubePlayerSupportFragment
+        videoPopUpFragment.initialize(getString(R.string.google_maps_key), this)
         mBuilder.setView(videoView)
-        popUp = mBuilder.create()
+        val videoPopUp = mBuilder.create()
 
         // additional Dialog properties
-        popUp.window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-        popUp.window.attributes.gravity = Gravity.BOTTOM
-        popUp.window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-        popUp.setOnCancelListener{
+        videoPopUp.window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        videoPopUp.window.attributes.gravity = Gravity.BOTTOM
+        videoPopUp.window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+        videoPopUp.setOnCancelListener{
             // removing fragment to avoid leaks
             val fragmentTransaction = supportFragmentManager.beginTransaction()
-            fragmentTransaction.remove(popUpFragment)
+            fragmentTransaction.remove(videoPopUpFragment)
             fragmentTransaction.commit()
         }
-        popUp.show()
+        videoPopUp.show()
     }
 
     override fun onInitializationSuccess(p0: YouTubePlayer.Provider?, player: YouTubePlayer?, wasRestored: Boolean) {
@@ -492,48 +475,48 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         val diff2 = setDifficultyView.findViewById<ImageButton>(R.id.diff2Button)
         val diff1 = setDifficultyView.findViewById<ImageButton>(R.id.diff1Button)
         mBuilder.setView(setDifficultyView)
-        popUp = mBuilder.create()
-        popUp.window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+        val difficultyPopUp = mBuilder.create()
+        difficultyPopUp.window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
 
         val currentMapNo = getIntInfo("mapNo")
         if (currentMapNo == 0){
             // user must choose the difficulty (cannot cancel) if no map chosen yet (on new game start)
-            popUp.setCancelable(false)
-            popUp.setCanceledOnTouchOutside(false)
+            difficultyPopUp.setCancelable(false)
+            difficultyPopUp.setCanceledOnTouchOutside(false)
         }
         // disabling the difficulty levels which can be chosen
         // based on the current chosen difficulty level (relevant during map upgrade)
         if (currentMapNo < 5){
-            setUpActiveButton(popUp, diff5, 5)
+            setUpActiveButton(difficultyPopUp, diff5, 5)
         } else {
             grayOutButton(diff5, R.drawable.ic_diff5)
         }
         if (currentMapNo < 4){
-            setUpActiveButton(popUp, diff4, 4)
+            setUpActiveButton(difficultyPopUp, diff4, 4)
         } else {
             grayOutButton(diff4, R.drawable.ic_diff4)
         }
         if (currentMapNo < 3){
-            setUpActiveButton(popUp, diff3, 3)
+            setUpActiveButton(difficultyPopUp, diff3, 3)
         } else {
             grayOutButton(diff3, R.drawable.ic_diff3)
         }
         if (currentMapNo < 2){
-            setUpActiveButton(popUp, diff2, 2)
+            setUpActiveButton(difficultyPopUp, diff2, 2)
         } else {
             grayOutButton(diff2, R.drawable.ic_diff2)
         }
         if (currentMapNo < 1){
-            setUpActiveButton(popUp, diff1, 1)
+            setUpActiveButton(difficultyPopUp, diff1, 1)
         } else {
             grayOutButton(diff1, R.drawable.ic_diff1)
         }
 
-        popUp.setOnCancelListener{
+        difficultyPopUp.setOnCancelListener{
             unblockInput()
         }
 
-        popUp.show()
+        difficultyPopUp.show()
     }
 
     fun grayOutButton(ib : ImageButton, resource : Int){
