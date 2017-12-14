@@ -295,7 +295,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         videoPopUp.window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         videoPopUp.window.attributes.gravity = Gravity.BOTTOM
         videoPopUp.window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
-        videoPopUp.setOnCancelListener{
+        videoPopUp.setOnDismissListener{
             // removing fragment to avoid leaks
             val fragmentTransaction = supportFragmentManager.beginTransaction()
             fragmentTransaction.remove(videoPopUpFragment)
