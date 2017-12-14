@@ -51,7 +51,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_maps)
-        point.imageAlpha = 0
+        point.imageAlpha = 0 // hiding word collected graphic
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
@@ -84,6 +84,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         if (getCurrentSong() != 0){
             score.text = score()
         }
+        // getting vibration preference
         val sharedPref = baseContext.defaultSharedPreferences
         vibration = sharedPref.getBoolean("vibration", true)
     }
@@ -102,6 +103,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         return when(item.itemId) {
             R.id.action_check_progress -> {
                 val intent = Intent(this, CheckProgressActivity::class.java)
+                // chaining the intent results, so that the user can switch to Progress activity from here
                 intent.setFlags(Intent.FLAG_ACTIVITY_FORWARD_RESULT)
                 startActivity(intent)
                 finish()
@@ -138,7 +140,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         }
     }
 
-    // when a user grants location permissions, the function calls requiring them get repeated
+    // when a user grants location permissions, replays onConnected and onMapReady to show map
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         when (requestCode) {
             PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION -> {
@@ -151,6 +153,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
         }
     }
 
+    // variables which relate to below method:
     private val recalculationDilution = 5
     private val closeNo = 50
     private var currentPoll = 0
@@ -200,7 +203,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                     markerLocation.latitude = marker.position.latitude
                     markerLocation.longitude = marker.position.longitude
 
-                    if (currentLocation.distanceTo(markerLocation) < 1000) {
+                    if (currentLocation.distanceTo(markerLocation) < 25) {
 
                         // removing marker from google map
                         mapMarkers[key]?.remove()
@@ -208,7 +211,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
                         // removing marker from closest markers list
                         iter.remove()
 
-                        // removing marker from hashmap
+                        // removing marker from hashmap of all of them
                         mapMarkers.remove(key)
 
                         // removing marker from SQL database
@@ -225,10 +228,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
     }
 
     fun collectedWord(){
-        point.imageAlpha = 255
+        point.imageAlpha = 255 // showing the collected word graphic
         val task = Alpha0()
         val timer = Timer()
-        timer.schedule(task, 500.toLong())
+        timer.schedule(task, 500.toLong()) // scheduling its disappearance
 
         if (vibration){
             (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(500)
@@ -304,11 +307,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback, GoogleApiClient.Co
             mMap.clear()
 
             // adding all the markers to the map
-            val mapMarkerOptions = hashMapOf<String, MarkerOptions>()
-            dbPlacemarkHandler.populateHashMap(mapMarkerOptions)
-            for (key in mapMarkerOptions.keys){
-                val marker = mMap.addMarker(mapMarkerOptions[key])
-                mapMarkers[key] = marker
+            val mapMarkerOptions = mutableListOf<MarkerOptions>()
+            dbPlacemarkHandler.populateList(mapMarkerOptions)
+            for (markerOption in mapMarkerOptions){
+                val marker = mMap.addMarker(markerOption)
+                mapMarkers[markerOption.title] = marker // putting them in hashmap
             }
         } catch (se : SecurityException) {
             Log.e(TAG, "Security exception thrown [onMapReady]")

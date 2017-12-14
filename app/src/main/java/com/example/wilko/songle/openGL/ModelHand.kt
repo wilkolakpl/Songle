@@ -17,7 +17,7 @@ import javax.microedition.khronos.opengles.GL10
  * A 3D hand open GL model.
  *
  * credits to Karl (ThinMatrix), whose YouTube tutorial guide was followed
- * in the creation of this class: https://www.youtube.com/watch?v=YKFYtekgnP8
+ * in the creation of the obj parser: https://www.youtube.com/watch?v=YKFYtekgnP8
  */
 
 class ModelHand(private val context : Context, private val id : Int) {
@@ -32,14 +32,14 @@ class ModelHand(private val context : Context, private val id : Int) {
 
     init {
         loadMesh()
-        vBuff = ByteBuffer.allocateDirect(vertices.size*4)
+        vBuff = ByteBuffer.allocateDirect(vertices.size*4) // byte sized, so *4
         vBuff.order(ByteOrder.nativeOrder())
 
         vFloatBuff = vBuff.asFloatBuffer()
         vFloatBuff.put(vertices)
         vFloatBuff.position(0)
 
-        iBuff = ByteBuffer.allocateDirect(indices.size*2)
+        iBuff = ByteBuffer.allocateDirect(indices.size*2) // half byte sized, so *2
         iBuff.order(ByteOrder.nativeOrder())
 
         iShortBuff = iBuff.asShortBuffer()
@@ -67,7 +67,7 @@ class ModelHand(private val context : Context, private val id : Int) {
             var line : String? = meshReader.readLine()
 
             while(line != null){
-
+                // parsing the obj file to extract vertices and their indices
                 val tokens : MutableList<String> = line.split(" ") as MutableList<String>
 
                 line = meshReader.readLine()
@@ -76,11 +76,11 @@ class ModelHand(private val context : Context, private val id : Int) {
 
 
                 if (tokens.size == 0 || tokens[0].equals("#"))
-                    continue
+                    continue // skipping comments
                 else if (tokens[0].equals("v")){
                     for (i in tokens.indices){
-                        if (i == 0) continue
-                        verticesList.add(tokens[i].toFloat())
+                        if (i == 0) continue // i == 0 on the letter "v", so skipping
+                        verticesList.add(tokens[i].toFloat()) // otherwise adding to vertices
                     }
                 }
                 else if (tokens[0].equals("f")){

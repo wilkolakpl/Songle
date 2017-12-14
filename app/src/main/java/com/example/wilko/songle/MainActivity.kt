@@ -59,16 +59,21 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // initial population of setting preferences on first launch
         PreferenceManager.setDefaultValues(this, R.xml.pref_general, false)
+
+        // setting the vibration preference
         val sharedPref = baseContext.defaultSharedPreferences
         vibration = sharedPref.getBoolean("vibration", true)
 
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
+        // setting up open GL renderer
         myRenderer = MyRenderer(applicationContext)
         surfaceView.setRenderer(myRenderer)
 
+        // setting up an internet receiver
         val filter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
         registerReceiver(receiver, filter)
 
@@ -87,22 +92,26 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
             } else if (getIntInfo("cached") == 4){
                 val intent = Intent(this, CheckProgressActivity::class.java)
                 startActivityForResult(intent, 1)
+                // same request code as above, as user can check Progress switching from Map
             }
         }
-        continueTxt()
 
+        continueTxt()
 
         // setting up progressBar
         val rotatingPlane = WanderingCubes()
         progressBar = spin_kit
         progressBar.indeterminateDrawable = rotatingPlane
-        progressBar.visibility = View.GONE
+        progressBar.visibility = View.GONE // hiding it
     }
 
     override fun onDestroy() {
         super.onDestroy()
         unregisterReceiver(receiver)
+
+        // dismissing popUps, needed in case of configuration change
         try {
+            // dismissing the potential YouTubePlayerFragment in popUp
             val fragmentTransaction = supportFragmentManager.beginTransaction()
             fragmentTransaction.remove(popUpFragment)
             fragmentTransaction.commit()
@@ -117,6 +126,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     }
 
     fun continueTxt() {
+        // displaying text according to context
         if (getIntInfo("cached") == 4 && !getNewGame()){
             score.text = score()
             mainTextLog.text = getString(R.string.continue_playing)
@@ -129,6 +139,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         val noOfWords = dbSongHandler.getProp(getIntInfo("currentSong"), "noOfWords").toDouble()
         val collectedWords = dbCollectedWordsHandler.howMany()
         val proportionCollected = (collectedWords/noOfWords)*100
+
         var score = 3*(10*Math.log10(proportionCollected+0.1)+10)
         if (won){ // award bonus points, in accordance to the difficulty level/selected map
             when (getIntInfo("mapNo")){
@@ -161,13 +172,15 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     }
 
     override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        toolMenu = menu //need reference to menu for disabling it during win/loose animation
-        if (getIntInfo("cached") != 4) { // edge case, blocks input during initial download
+        toolMenu = menu // need reference to menu for disabling it during win/loose animation
+        if (getIntInfo("cached") != 4) {
+            // edge case, blocks input during initial download, on first launch
             toolMenu.getItem(0).isEnabled = false
         }
         return super.onPrepareOptionsMenu(menu)
     }
 
+    // METHODS THAT RELATE TO SHARED PREFERENCES FOLLOW:
     fun setIntInfo(key: String, int: Int){
         val sharedPref = getSharedPreferences("stateVars", Context.MODE_PRIVATE)
         val editor = sharedPref.edit()
@@ -203,8 +216,9 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     private var state = 0
     fun handRoll(won: Boolean){
         // block input during animation
-        blockInput(false)
+        blockInput(false) // false blocks the default loading spin
 
+        // setting initial pose and changing it 10 times - final pose is deterministic
         val x : Int
         if (won) {
             x = 2
@@ -213,12 +227,16 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         }
         state = x-1
 
+        // scheduling all the pose changes
         for (it in 1..10){
             val task = FlagChange()
             val timer = Timer()
+            // using a power function to model the distribution so that the switching
+            // is rapid at first and then slows down
             timer.schedule(task, ((pow((it-11).toDouble(), 2.toDouble()))*40).toLong())
         }
 
+        // also scheduling the final screen
         val task = FinalResult(won)
         val timer = Timer()
         timer.schedule(task, 4000)
@@ -237,7 +255,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     private inner class FinalResult(val won : Boolean): TimerTask(){
         override fun run(){
             runOnUiThread{
-                mainTextLog.text = titleStr
+                mainTextLog.text = titleStr // displaying the titleStr set in onActivityResult
                 if (vibration){
                     (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(500)
                 }
@@ -247,16 +265,29 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                     CommonConfetti.rainingConfetti(window.decorView.rootView as ViewGroup,
                             intArrayOf(Color.YELLOW)).oneShot()
                 }
-                // unblock input after animation
                 unblockInput()
             }
+        }
+    }
+
+    private fun blockInput(spin : Boolean = true){
+        if (spin) {
+            // its not going to show the loading spin during guess animation
+            progressBar.visibility = View.VISIBLE
+        }
+        grayOutButton(mapButton, R.drawable.ic_mapicon) // disabling and graying-out the buttons
+        grayOutButton(checkProgressButton, R.drawable.ic_progressicon)
+        try {
+            toolMenu.getItem(0).isEnabled = false
+        } catch (e : UninitializedPropertyAccessException) {
+            Log.i(localClassName, "toolMenu uninitialized")
         }
     }
 
     private fun unblockInput(){
         progressBar.visibility = View.GONE
         mapButton.isEnabled = true
-        mapButton.setImageDrawable(getDrawable(R.drawable.ic_mapicon))
+        mapButton.setImageDrawable(getDrawable(R.drawable.ic_mapicon)) // reversing the button grey-out
         checkProgressButton.isEnabled = true
         checkProgressButton.setImageDrawable(getDrawable(R.drawable.ic_progressicon))
         try {
@@ -266,30 +297,23 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         }
     }
 
-    private fun blockInput(spin : Boolean = true){
-        if (spin) {
-            progressBar.visibility = View.VISIBLE
-        } // its not going to show the loading spin during guess animation
-        grayOutButton(mapButton, R.drawable.ic_mapicon)
-        grayOutButton(checkProgressButton, R.drawable.ic_progressicon)
-        try {
-            toolMenu.getItem(0).isEnabled = false
-        } catch (e : UninitializedPropertyAccessException) {
-            Log.i(localClassName, "toolMenu uninitialized")
-        }
-    }
-
     private fun playVideo(){
+        // setting up a YouTubePlayerFragment in a Dialog
         val mBuilder = AlertDialog.Builder(this@MainActivity)
         val videoView = layoutInflater.inflate(R.layout.video, null)
+
+        // getting the fragment from the inflated view
         popUpFragment = supportFragmentManager.findFragmentById(R.id.videoView) as YouTubePlayerSupportFragment
         popUpFragment.initialize(getString(R.string.google_maps_key), this)
         mBuilder.setView(videoView)
         popUp = mBuilder.create()
+
+        // additional Dialog properties
         popUp.window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         popUp.window.attributes.gravity = Gravity.BOTTOM
         popUp.window.clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
         popUp.setOnCancelListener{
+            // removing fragment to avoid leaks
             val fragmentTransaction = supportFragmentManager.beginTransaction()
             fragmentTransaction.remove(popUpFragment)
             fragmentTransaction.commit()
@@ -304,7 +328,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
     }
 
     override fun onInitializationFailure(p0: YouTubePlayer.Provider?, p1: YouTubeInitializationResult?) {
-        Log.e(localClassName, "failed to initialize youtube player fragment")
+        Log.e(localClassName, "failed to initialize YouTube player fragment")
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -329,13 +353,13 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                 if (songNo != 0) {
                     mainTextLog.text = getString(R.string.how_did_you_do)
                     if (songNo == getIntInfo("currentSong")){
-                        titleStr = getString(R.string.correct_guess)
-                        handRoll(true)
+                        titleStr = getString(R.string.correct_guess) // storing this text in a var, to delay the displaying
+                        handRoll(true) // trigger animation
                     } else {
                         titleStr = getString(R.string.incorrect_guess)
                         handRoll(false)
                     }
-                    setNewGame(true)
+                    setNewGame(true) // flag
                 } else if (didUpgrade) {
                     mainTextLog.text = getString(R.string.map_upgrade)
                     showDifficultyDialog()
@@ -352,7 +376,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
             // recreate() cannot be used here as it has a bug associated with it,
             // where the polish comma instead of a period wouldn't properly refresh in the score :P
         }
-        // reset hand to neutral state when returning from an activity
+        // reset hand graphic to neutral pose when returning from an activity
         myRenderer.changeStateFlag(0)
 
     }
@@ -366,6 +390,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         setNewGame(true)
         blockInput()
 
+        // initialize the required download on start of new game
         DownloadSongXml(NetworkReceiver()).execute()
     }
 
@@ -388,10 +413,10 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
         override fun asyncComplete(result: DownloadType?){
             // stage the downloads, keeping flags to indicate levels of completion
             if (result != null){
-                // the results are enums indicating the staging
+                // the async results are enums indicating the staging
                 if (result == DownloadType.SONGS) {
                     mainTextLog.text = getString(R.string.downloading_lyrics)
-                    DownloadLyrics(this).execute()
+                    DownloadLyrics(this).execute() // chaining the asyncs
                     setIntInfo("cached", 1)
                 } else if (result == DownloadType.NO_NEW_SONGS && getIntInfo("cached") == 4) {
                     chooseSong()
@@ -407,8 +432,9 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
                     chooseSong()
                     setIntInfo("cached", 4)
                 } else {
-                    // edge case: when the download has been interrupted - the song list timestamp
+                    // edge case: when the download has been interrupted and the song list timestamp
                     // has been preserved, but later staging has failed - just restart the download
+                    // and reset the timestamp
                     mainTextLog.text = getString(R.string.downloading_xml)
                     setTimestamp("reset")
                     DownloadSongXml(this).execute()
@@ -471,9 +497,12 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
 
         val currentMapNo = getIntInfo("mapNo")
         if (currentMapNo == 0){
+            // user must choose the difficulty (cannot cancel) if no map chosen yet (on new game start)
             popUp.setCancelable(false)
             popUp.setCanceledOnTouchOutside(false)
         }
+        // disabling the difficulty levels which can be chosen
+        // based on the current chosen difficulty level (relevant during map upgrade)
         if (currentMapNo < 5){
             setUpActiveButton(popUp, diff5, 5)
         } else {

@@ -9,6 +9,8 @@ import java.util.*
 
 /**
  * Created by wilko on 10/25/2017.
+ *
+ * Class for downloading and storing all lyrics.
  */
 class DownloadLyrics(caller : AsyncCompleteListener<DownloadType>) : DownloadTask<DownloadType>(caller){
 
@@ -24,6 +26,7 @@ class DownloadLyrics(caller : AsyncCompleteListener<DownloadType>) : DownloadTas
             val lyricString = IOUtils.toString(stream, "UTF-8")
             val ctn = ContentValues()
             ctn.put("lyric", lyricString)
+
             // calculating the number of words in a song, needed for the scoring system
             val noOfWords = lyricString.split(" ", "\n") as MutableList<String>
             print(noOfWords)
@@ -31,6 +34,7 @@ class DownloadLyrics(caller : AsyncCompleteListener<DownloadType>) : DownloadTas
             noOfWords.removeAll(Arrays.asList(""))
             ctn.put("noOfWords", noOfWords.size)
 
+            // adding lyric and noOfWords information to DBSongs
             db.update("songs", ctn, "number=" + song.number, null)
         }
         db.close()

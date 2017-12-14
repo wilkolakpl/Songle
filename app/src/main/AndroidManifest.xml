@@ -30,9 +30,8 @@
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar"
             android:configChanges="orientation|screenSize">
-            <!--This configChanges line is needed, to handle configuration-->
-            <!--changes without calling onCreate, as that resets the OpenGL -->
-            <!--model and leaks opened views (alertDialogs)-->
+            <!--This configChanges line is needed, to handle orientation configuration changes-->
+            <!--without calling onCreate, as that resets the OpenGL model-->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

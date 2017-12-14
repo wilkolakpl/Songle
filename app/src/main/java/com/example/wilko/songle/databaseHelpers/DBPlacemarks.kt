@@ -77,7 +77,7 @@ object DBPlacemarks : SQLiteOpenHelper(App.instance, "placemarks.db", null, 1) {
         db.close()
     }
 
-    fun populateHashMap(map : HashMap<String, MarkerOptions>){
+    fun populateList(list: MutableList<MarkerOptions>){
         val db = writableDatabase
         val query = "SELECT * FROM " + TABLE_PLACEMARKS + " WHERE 1"
         val c = db.rawQuery(query, null)
@@ -105,7 +105,7 @@ object DBPlacemarks : SQLiteOpenHelper(App.instance, "placemarks.db", null, 1) {
                 Log.e(TAG, "couldn't load pin pngs from local storage")
             }
 
-            map[c.getString(c.getColumnIndex(COLUMN_NAME))] = mrkr
+            list.add(mrkr)
 
             c.moveToNext()
         }

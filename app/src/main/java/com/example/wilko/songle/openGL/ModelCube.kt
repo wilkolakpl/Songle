@@ -16,6 +16,7 @@ import javax.microedition.khronos.opengles.GL10
  */
 
 class ModelCube {
+    // hard-coded properties:
     private var vertices: FloatArray = floatArrayOf(
             2F,-5F,-2F,
             2F,-7F,-2F,
@@ -49,21 +50,21 @@ class ModelCube {
     private var c2Buff : FloatBuffer
 
     init {
-        vBuff = ByteBuffer.allocateDirect(vertices.size*4)
+        vBuff = ByteBuffer.allocateDirect(vertices.size*4) // byte sized, so *4
         vBuff.order(ByteOrder.nativeOrder())
 
         v2Buff = vBuff.asFloatBuffer()
         v2Buff.put(vertices)
         v2Buff.position(0)
 
-        iBuff = ByteBuffer.allocateDirect(indexes.size*2)
+        iBuff = ByteBuffer.allocateDirect(indexes.size*2) // half byte sized, so *2
         iBuff.order(ByteOrder.nativeOrder())
 
         i2Buff = iBuff.asShortBuffer()
         i2Buff.put(indexes)
         i2Buff.position(0)
 
-        cBuff = ByteBuffer.allocateDirect(colors.size*4)
+        cBuff = ByteBuffer.allocateDirect(colors.size*4) // byte sized, so *4
         cBuff.order(ByteOrder.nativeOrder())
 
         c2Buff = cBuff.asFloatBuffer()

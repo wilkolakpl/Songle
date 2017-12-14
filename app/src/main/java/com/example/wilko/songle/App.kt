@@ -1,7 +1,6 @@
 package com.example.wilko.songle
 
 import android.app.Application
-import android.util.Log
 import com.example.wilko.songle.utils.DelegatesExt
 import org.jetbrains.anko.defaultSharedPreferences
 import java.util.*
@@ -28,7 +27,7 @@ class App : Application() {
         val lang = defaultSharedPreferences.getString("language", "en")
         val sysLang = defaultSharedPreferences.getBoolean("system_language", true)
         val systemLocale = Locale.getDefault().displayLanguage
-        if (lang != "" && systemLocale != lang && !sysLang) {
+        if (!sysLang && systemLocale != lang && lang != "") {
             val locale = Locale(lang)
             resources.configuration.locale = locale
             resources.updateConfiguration(resources.configuration, resources.displayMetrics)

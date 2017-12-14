@@ -13,34 +13,36 @@ import java.io.InputStream
 /**
  * Created by wilko on 12/11/2017.
  *
- * This async task prepares the kml maps.
+ * This async task prepares the kml maps- parses kml and populates database.
  */
 
 class KmlLoaderAsync(private val caller : AsyncCompleteListener<Int>) :
         AsyncTask<Int, Void, Int>() {
 
     private val dbPlacemarkHandler = DBPlacemarks
-    private val TAG = "KmlLoaderAsynch"
+    private val TAG = "KmlLoaderAsync"
 
     override fun doInBackground(vararg mapNoArg: Int?): Int{
-
+        // retrieve map number
         val mapNo = mapNoArg[0]
+
         if (mapNo != null) {
             val kmlFile : InputStream?
             try {
                 kmlFile = FileInputStream(App.instance.filesDir.toString() + "/map" + mapNo + "song" + getCurrentSong() + "cacheKml.kml")
             } catch (e : IOException) {
                 Log.e(TAG, "couldn't open the kml from local storage")
-                return -1
+                return -1 // invalid mapNo
             }
+            // parsing kml and populating database
             val kmlParser = KmlParser()
             val placemarks = kmlParser.parse(kmlFile)
             dbPlacemarkHandler.deleteAll()
             dbPlacemarkHandler.addAll(placemarks)
-            return mapNo
+            return mapNo // indicates successful completion
         } else {
             Log.e(TAG, "mapNo not provided")
-            return -1
+            return -1 // invalid mapNo
         }
     }
 

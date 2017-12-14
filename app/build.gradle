@@ -35,7 +35,6 @@ dependencies {
     implementation files('libs/commons-io-2.6.jar')
     implementation files('libs/YouTubeAndroidPlayerApi.jar')
     compile "org.jetbrains.anko:anko-commons:0.10.2"
-    compile "org.jetbrains.anko:anko-coroutines:0.10.2"
     compile "com.github.ybq:Android-SpinKit:1.1.0"
     compile "com.github.jinatonic.confetti:confetti:1.1.0"
     testImplementation 'junit:junit:4.12'

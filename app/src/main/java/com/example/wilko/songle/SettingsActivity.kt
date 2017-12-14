@@ -84,14 +84,6 @@ class SettingsActivity : AppCompatPreferenceActivity(), SharedPreferences.OnShar
         }
     }
 
-    fun changeLanguage(language: String){
-        val locale = Locale(language)
-        resources.configuration.locale = locale
-        resources.updateConfiguration(resources.configuration, resources.displayMetrics)
-
-        recreate()
-    }
-
     companion object {
 
         /**
@@ -161,9 +153,19 @@ class SettingsActivity : AppCompatPreferenceActivity(), SharedPreferences.OnShar
                     changeLanguage(language)
                 }
             } else if (key == "language"){
+                // no need to be concerned with system_language here, as when its false this option is disabled
                 val language = sharedPreferences.getString("language", "en")
                 changeLanguage(language)
             }
         }
+    }
+
+    fun changeLanguage(language: String){
+        // updating the language
+        val locale = Locale(language)
+        resources.configuration.locale = locale
+        resources.updateConfiguration(resources.configuration, resources.displayMetrics)
+        // and refreshing the activity, to see changes
+        recreate()
     }
 }

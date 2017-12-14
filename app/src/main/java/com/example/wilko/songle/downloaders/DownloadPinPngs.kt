@@ -5,6 +5,8 @@ import com.example.wilko.songle.utils.AsyncCompleteListener
 
 /**
  * Created by wilko on 10/24/2017.
+ *
+ * Class for downloading and storing all marker images.
  */
 
 class DownloadPinPngs(caller : AsyncCompleteListener<DownloadType>) : DownloadTask<DownloadType>(caller){
@@ -17,6 +19,7 @@ class DownloadPinPngs(caller : AsyncCompleteListener<DownloadType>) : DownloadTa
         val pinInterestingStream = downloadUrl(urlString +"orange-diamond.png")
         val pinVeryInterestingStream = downloadUrl(urlString +"red-stars.png")
 
+        // saving images in hardcoded locations
         fromStreamToFile(App.instance, "wht_blank.png", pinUnclassifiedStream)
         fromStreamToFile(App.instance, "ylw_blank.png", pinBoringStream)
         fromStreamToFile(App.instance, "ylw_circle.png", pinNotBoringStream)

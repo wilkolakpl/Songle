@@ -18,7 +18,7 @@ import kotlinx.android.synthetic.main.activity_song_selection.*
  *
  * A ListView container activity.
  *
- * credits to Brian Voong, whose YouTube tutorial guide was followed in the creation of this class
+ * credits to Brian Voong, whose YouTube tutorial guide was followed in the creation the ListView adapter
  * https://www.youtube.com/watch?v=EwwdQt3_fFU
  */
 
@@ -33,9 +33,9 @@ class SongSelectionActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_song_selection)
 
-        dbHandler.populateList(songs)
+        dbHandler.populateList(songs) // getting songs
 
-        songList.adapter = adapter
+        songList.adapter = adapter // setting custom adapter
         songList.isClickable = true
         songList.setOnItemClickListener { _, _, position, _ ->
             val returnIntent = Intent()

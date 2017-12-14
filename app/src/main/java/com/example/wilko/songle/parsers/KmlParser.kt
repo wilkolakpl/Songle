@@ -1,6 +1,5 @@
 package com.example.wilko.songle.parsers
 
-import android.content.Context
 import android.util.Xml
 import com.example.wilko.songle.dataClasses.Placemark
 import com.example.wilko.songle.databaseHelpers.DBCollectedWords

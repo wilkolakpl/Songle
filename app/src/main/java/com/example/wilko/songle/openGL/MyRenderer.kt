@@ -7,7 +7,6 @@ import android.os.SystemClock
 import com.example.wilko.songle.App
 import com.example.wilko.songle.R
 import org.jetbrains.anko.defaultSharedPreferences
-import java.lang.ref.WeakReference
 import javax.microedition.khronos.opengles.GL10
 import javax.microedition.khronos.egl.EGLConfig
 

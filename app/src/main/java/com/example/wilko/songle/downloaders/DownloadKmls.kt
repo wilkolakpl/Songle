@@ -10,6 +10,8 @@ import com.example.wilko.songle.databaseHelpers.DBSongs
 
 /**
  * Created by wilko on 10/22/2017.
+ *
+ * Class for downloading and storing all Kmls.
  */
 
 class DownloadKmls(caller : AsyncCompleteListener<DownloadType>) : DownloadTask<DownloadType>(caller){
@@ -19,11 +21,14 @@ class DownloadKmls(caller : AsyncCompleteListener<DownloadType>) : DownloadTask<
         val songs = mutableListOf<Song>()
         dbHandler.populateList(songs)
 
+        // iterating through all songs and difficulties
         val db = dbHandler.writableDatabase
         for (song in songs) {
             val ctn = ContentValues()
             for (whichMap in 1..5){
                 downloadKml(urlString, whichMap, song.number, App.instance)
+
+                // saving the location of where it was stored in the DBSongs database
                 ctn.put("kmlLocation" + whichMap, App.instance.filesDir.toString() + "map" + whichMap + "song" + song.number + "cacheKml.kml")
             }
             db.update("songs", ctn, "number=" + song.number, null)

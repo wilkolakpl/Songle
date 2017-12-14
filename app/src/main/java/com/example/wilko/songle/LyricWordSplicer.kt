@@ -5,7 +5,6 @@ import android.os.AsyncTask
 import com.example.wilko.songle.databaseHelpers.DBCollectedWords
 import com.example.wilko.songle.databaseHelpers.DBSongs
 import com.example.wilko.songle.utils.AsyncCompleteListener
-import java.lang.ref.WeakReference
 
 /**
  * Created by wilko on 10/29/2017.
@@ -46,7 +45,7 @@ class LyricWordSplicer(private val caller : AsyncCompleteListener<String>) :
                     } else { // if it has not been collected, replacing the word's characters with whitespaces
                         if (wordNo == words.size -1){
                             newString.append(words[wordNo].replace(Regex("[^ ]"), " "))
-                        } else {
+                        } else { // adding whitespace after word, unless it is the last one in line
                             newString.append(words[wordNo].replace(Regex("[^ ]"), " ") + " ")
                         }
                     }
