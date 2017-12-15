@@ -306,6 +306,7 @@ class MainActivity : AppCompatActivity(), YouTubePlayer.OnInitializedListener {
 
     override fun onInitializationSuccess(p0: YouTubePlayer.Provider?, player: YouTubePlayer?, wasRestored: Boolean) {
         if (!wasRestored) {
+            player?.setShowFullscreenButton(false)
             player?.loadVideo(dbSongHandler.getProp(getIntInfo("currentSong"), "link"))
         }
     }
